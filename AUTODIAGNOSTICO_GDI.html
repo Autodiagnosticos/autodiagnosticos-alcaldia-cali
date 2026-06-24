@@ -1,0 +1,2360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Autodiagnóstico GDI — Gobierno Digital</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+:root{
+  --navy:#0B2B5C;--navy-mid:#153D7A;--navy-light:#1E5299;
+  --gold:#C8A951;--gold-light:#F0D98A;
+  --surface:#F5F7FB;--card:#FFFFFF;--border:#DDE3EE;
+  --text:#1A2340;--text-soft:#5A6480;
+  --ok-bg:#E6F4EC;--ok-text:#1A6B3C;--ok-border:#7EC8A0;
+  --bad-bg:#FDF0EF;--bad-text:#B03020;--bad-border:#F4A89A;
+  --neg-bg:#F7F8FA;--neg-text:#8A94A6;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--surface);color:var(--text);line-height:1.5;}
+.header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);color:#fff;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(11,43,92,.3);}
+.header-inner{max-width:860px;margin:0 auto;padding:20px 24px 16px;display:flex;align-items:flex-start;gap:20px;}
+.header-icon{width:48px;height:48px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px;}
+.header-text{flex:1;}
+.header-text .eyebrow{font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--gold-light);text-transform:uppercase;margin-bottom:4px;}
+.header-text h1{font-size:17px;font-weight:700;line-height:1.3;color:#fff;}
+.header-text .subtitle{font-size:12px;color:rgba(255,255,255,.65);margin-top:3px;}
+.score-pill{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.22);border-radius:50px;padding:8px 16px;text-align:center;min-width:90px;flex-shrink:0;}
+.score-pill .score-val{font-size:22px;font-weight:700;color:var(--gold-light);line-height:1;}
+.score-pill .score-label{font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+.progress-bar-wrap{max-width:860px;margin:0 auto;padding:0 24px 12px;display:flex;align-items:center;gap:10px;}
+.progress-bar-track{flex:1;height:5px;background:rgba(255,255,255,.18);border-radius:99px;overflow:hidden;}
+.progress-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--gold-light),var(--gold));border-radius:99px;transition:width .4s ease;}
+.progress-label{font-size:10px;color:rgba(255,255,255,.55);white-space:nowrap;letter-spacing:.05em;}
+.main{max-width:860px;margin:0 auto;padding:28px 24px 60px;}
+.tipo-badge{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:99px;margin-left:8px;background:rgba(200,169,81,.18);color:var(--gold);border:1px solid rgba(200,169,81,.35);vertical-align:middle;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:18px;overflow:hidden;box-shadow:0 1px 4px rgba(11,43,92,.06);transition:box-shadow .2s;}
+.card:hover{box-shadow:0 4px 18px rgba(11,43,92,.1);}
+.card-score-bar{height:3px;background:var(--border);}
+.card-score-fill{height:100%;width:0%;background:var(--gold);transition:width .4s ease;}
+.card-header{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border);background:#FAFBFD;}
+.card-code{background:var(--navy);color:var(--gold-light);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:6px;white-space:nowrap;margin-top:1px;flex-shrink:0;}
+.card-question{font-size:13.5px;font-weight:600;color:var(--text);line-height:1.45;flex:1;}
+.card-body{padding:10px 0;}
+.option-row{display:flex;align-items:flex-start;padding:10px 20px;border-bottom:1px solid #F0F2F7;transition:background .15s;}
+.option-row:last-child{border-bottom:none;}
+.option-row:hover{background:#F5F7FB;}
+.option-row.is-negative{background:var(--neg-bg);}
+.option-row.is-negative:hover{background:#EEF0F5;}
+.cb-wrap{flex-shrink:0;margin-top:1px;}
+.cb-wrap input[type=checkbox]{display:none;}
+.cb-box{width:18px;height:18px;border:2px solid var(--border);border-radius:5px;background:#fff;display:flex;align-items:center;justify-content:center;transition:all .15s;cursor:pointer;flex-shrink:0;}
+.cb-wrap input:checked+.cb-box{background:var(--navy);border-color:var(--navy);}
+.cb-wrap input:checked+.cb-box::after{content:'';width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px);display:block;}
+.is-negative .cb-wrap input:checked+.cb-box{background:var(--neg-text);border-color:var(--neg-text);}
+.option-content{flex:1;display:flex;flex-direction:column;gap:6px;padding-left:12px;}
+.option-label{font-size:13px;color:var(--text);line-height:1.45;cursor:pointer;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.option-label-text{flex:1;}
+.status-badge{font-size:10px;font-weight:600;letter-spacing:.06em;padding:2px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0;text-transform:uppercase;}
+.status-ok{background:var(--ok-bg);color:var(--ok-text);border:1px solid var(--ok-border);}
+.status-bad{background:var(--bad-bg);color:var(--bad-text);border:1px solid var(--bad-border);}
+.soporte-input{width:100%;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-family:inherit;font-size:12px;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s;}
+.soporte-input::placeholder{color:#AEBACF;}
+.soporte-input:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(30,82,153,.12);background:#fff;}
+.is-negative .soporte-input{background:var(--neg-bg);}
+.neg-label-text{color:var(--neg-text);font-style:italic;}
+.actions{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border:none;border-radius:9px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;}
+.btn-primary{background:var(--navy);color:#fff;box-shadow:0 2px 8px rgba(11,43,92,.3);}
+.btn-primary:hover{background:var(--navy-light);transform:translateY(-1px);}
+.btn-secondary{background:#fff;color:var(--text-soft);border:1.5px solid var(--border);}
+.btn-secondary:hover{background:var(--surface);border-color:#B0BAD0;}
+.btn svg{width:15px;height:15px;}
+.summary-bar{position:fixed;bottom:0;left:0;right:0;background:var(--navy);border-top:2px solid var(--gold);padding:10px 24px;display:flex;align-items:center;justify-content:center;gap:32px;z-index:90;box-shadow:0 -4px 20px rgba(11,43,92,.25);}
+.stat-item{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.8);font-size:12px;}
+.stat-val{font-size:16px;font-weight:700;color:var(--gold-light);}
+.stat-divider{width:1px;height:30px;background:rgba(255,255,255,.15);}
+
+  /* ── CONSULTOR en progress-bar ── */
+  .progress-bar-wrap {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .consultant-info {
+    margin-left: auto;
+    text-align: right;
+    line-height: 1.35;
+    flex-shrink: 0;
+  }
+  .consultant-info .ci-name  { font-size: 11px; font-weight: 700; color: var(--gold-light); display: block; white-space: nowrap; }
+  .consultant-info .ci-role  { font-size: 10px; color: rgba(255,255,255,0.75); display: block; }
+  .consultant-info .ci-contact { font-size: 9.5px; color: rgba(255,255,255,0.55); display: block; }
+
+  /* ── TABS ── */
+  .tab-nav {
+    max-width: 860px; margin: 0 auto;
+    padding: 14px 24px 0;
+    display: flex; gap: 6px;
+    background: var(--surface);
+  }
+  .tab-btn {
+    padding: 9px 20px;
+    border: 1.5px solid var(--border); border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    background: #E8ECF5; color: var(--text-soft);
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .tab-btn.active { background: var(--card); color: var(--navy); border-color: var(--border); box-shadow: 0 -2px 8px rgba(11,43,92,0.07); }
+  .tab-btn:hover:not(.active) { background: #D8DDED; }
+  .tab-badge { background: var(--bad-bg); color: var(--bad-text); border: 1px solid var(--bad-border); font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 99px; }
+  .tab-badge.zero { background: #eee; color: #aaa; border-color: #ddd; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── PLAN DE TRABAJO ── */
+  .plan-wrap { max-width: 860px; margin: 0 auto; padding: 28px 24px 80px; }
+  .plan-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .plan-title { font-size: 16px; font-weight: 700; color: var(--navy); }
+  .plan-subtitle { font-size: 12px; color: var(--text-soft); margin-top: 2px; }
+  .plan-empty { text-align: center; padding: 60px 20px; color: var(--text-soft); font-size: 13px; }
+  .plan-empty .icon { font-size: 40px; margin-bottom: 12px; }
+  .plan-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  .plan-table { width: 100%; border-collapse: collapse; font-size: 12px; background: var(--card); }
+  .plan-table th { background: var(--navy); color: #fff; padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; white-space: nowrap; }
+  .plan-table th:first-child { border-radius: 12px 0 0 0; }
+  .plan-table th:last-child  { border-radius: 0 12px 0 0; }
+  .plan-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .plan-table tr:last-child td { border-bottom: none; }
+  .plan-table tr:nth-child(even) td { background: var(--surface); }
+  .plan-table .topic-cell { font-weight: 500; color: var(--navy); max-width: 220px; }
+  .plan-table .code-pill { font-size: 10px; font-weight: 700; background: var(--navy); color: #fff; padding: 2px 7px; border-radius: 99px; display: inline-block; margin-bottom: 4px; }
+  .plan-table input[type=text], .plan-table input[type=date] { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-family: inherit; font-size: 11px; color: var(--text); background: #fff; outline: none; }
+  .plan-table input:focus { border-color: var(--focus); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+  .btn-export-plan { background: var(--gold); color: var(--navy); border: none; border-radius: 8px; padding: 9px 18px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .btn-export-plan:hover { background: var(--gold-light); }
+
+
+  /* ── BANNER IDENTIFICACIÓN ── */
+  .ident-banner {
+    background: linear-gradient(135deg, #0B2B5C 0%, #153D7A 100%);
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    box-shadow: 0 3px 20px rgba(11,43,92,0.35);
+  }
+  .ident-inner {
+    max-width: 860px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+  }
+  .ident-field {
+    display: flex; flex-direction: column; flex: 1; min-width: 160px;
+  }
+  .ident-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.55); text-transform: uppercase; margin-bottom: 4px;
+  }
+  .ident-input {
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 7px;
+    padding: 7px 11px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 12px; color: #fff;
+    outline: none; width: 100%;
+  }
+  .ident-input::placeholder { color: rgba(255,255,255,0.35); }
+  .ident-input:focus { border-color: #C8A951; background: rgba(255,255,255,0.15); }
+  .ident-required { color: #F0D98A; }
+  .ident-alert {
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #B03020; color: #fff; border-radius: 10px;
+    padding: 12px 24px; font-size: 13px; font-weight: 600;
+    z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s;
+  }
+  .ident-success {
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #1A6B3C; color: #fff; border-radius: 10px;
+    padding: 12px 24px; font-size: 13px; font-weight: 600;
+    z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s;
+  }
+  @keyframes fadeIn { from { opacity:0; top:10px; } to { opacity:1; top:20px; } }
+
+</style>
+</head>
+<body>
+
+<!-- BANNER IDENTIFICACIÓN -->
+<div class="ident-banner">
+  <div class="ident-inner">
+    <div class="ident-field">
+      <span class="ident-label">Nombre completo <span class="ident-required">*</span></span>
+      <input class="ident-input" type="text" id="ident_nombre" placeholder="Funcionario que diligencia…">
+    </div>
+    <div class="ident-field">
+      <span class="ident-label">Dependencia / Área <span class="ident-required">*</span></span>
+      <input class="ident-input" type="text" id="ident_dependencia" placeholder="Secretaría, Despacho, Área…">
+    </div>
+    <div class="ident-field" style="max-width:120px;min-width:100px">
+      <span class="ident-label">Vigencia <span class="ident-required">*</span></span>
+      <input class="ident-input" type="number" id="ident_vigencia" placeholder="2024" min="2020" max="2030">
+    </div>
+  </div>
+</div>
+<div class="ident-alert" id="identAlert">⚠️ Complete Nombre, Dependencia y Vigencia antes de guardar.</div>
+<div class="ident-success" id="identSuccess">✅ Respuestas enviadas correctamente a Google Sheets.</div>
+<!-- FIN BANNER -->
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-icon">🖥️</div>
+    <div class="header-text">
+      <div class="eyebrow">Función Pública · Índice GDI · Gobierno Digital</div>
+      <h1>Autodiagnóstico de Gobierno Digital</h1>
+      <div class="subtitle">Marque las opciones que aplican y registre el soporte correspondiente</div>
+    </div>
+    <div class="score-pill">
+      <div class="score-val" id="total">0</div>
+      <div class="score-label">Puntos</div>
+    </div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">0 / 0 opciones</div>
+      <div class="consultant-info">
+        <span class="ci-name">Ilder Luis Palta Velasco</span>
+        <span class="ci-role">Consultor Organizacional</span>
+        <span class="ci-contact">📱 317 297 1922 · ✉️ luispalta@gmail.com</span>
+      </div>
+  </div>
+</div>
+<div class="tab-nav">
+  <button class="tab-btn active" id="tab-diag" onclick="switchTab('diag')">📋 Autodiagnóstico</button>
+  <button class="tab-btn" id="tab-plan" onclick="switchTab('plan')">🗂️ Plan de Trabajo <span class="tab-badge zero" id="planBadge">0</span></button>
+</div>
+<div class="tab-panel active" id="panel-diag">
+<div class="main" id="mainContent"></div>
+</div><!-- cierre panel-diag -->
+
+<div class="tab-panel" id="panel-plan">
+  <div class="plan-wrap">
+    <div class="plan-header-row">
+      <div>
+        <div class="plan-title">🗂️ Plan de Trabajo</div>
+        <div class="plan-subtitle">Opciones marcadas como <strong>Priorizar</strong> — complete fechas, entregable y responsable</div>
+      </div>
+      <button class="btn-export-plan" onclick="exportarPlan()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar Plan (JSON)
+      </button>
+    </div>
+    <div id="planContent">
+      <div class="plan-empty"><div class="icon">✅</div>Sin ítems a priorizar.<br>Complete el autodiagnóstico primero.</div>
+    </div>
+  </div>
+</div>
+
+<div class="main" style="padding-top:0">
+  <div class="actions">
+    <button class="btn btn-primary" onclick="guardar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Guardar resultado
+    </button>
+    <button class="btn btn-secondary" onclick="limpiar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
+      Limpiar todo
+    </button>
+  </div>
+</div>
+<div class="summary-bar">
+  <div class="stat-item"><span>Puntaje total:</span><span class="stat-val" id="total2">0</span><span>pts</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat-item"><span>Seleccionadas:</span><span class="stat-val" id="checkedCount">0</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat-item"><span>A priorizar:</span><span class="stat-val" id="pendingCount">0</span></div>
+</div>
+<script>
+const POINTS_PER = 0.3448275862;
+const questions = [
+  {
+    "id": "GDI200",
+    "text": "¿En cuál de las siguientes instancias /dependencias de la entidad se toman decisiones sobre la implementación de la Política de Gobierno Digital?:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Comité de Gestión y Desempeño Institucional"
+      },
+      {
+        "neg": 0,
+        "label": "Oficina de Tecnologías de Información"
+      },
+      {
+        "neg": 0,
+        "label": "Oficina de Planeación"
+      },
+      {
+        "neg": 0,
+        "label": "Otras. ¿Cuáles?:"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI201",
+    "text": "¿Qué medios digitales utilizó la entidad para interactuar con sus grupos de valor e interés (ciudadanía, sociedad civil, academia, sector privado y sector público) durante la vigencia evaluada?:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sede electrónica"
+      },
+      {
+        "neg": 0,
+        "label": "Redes sociales (Facebook, Instagram, X, Youtube, Telegram)"
+      },
+      {
+        "neg": 0,
+        "label": "Espacios virtuales de participación como juntas de acción comunal, cabildos, consejos, foros, talleres, mesas informativas, mesas consultivas, mesas resolutivas o de decisión"
+      },
+      {
+        "neg": 0,
+        "label": "Otros medios digitales. Especifique cuáles:"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no utilizó medios digitales para interactuar con sus grupos de interés (ciudadanía, sociedad civil, academia, sector privado y sector público)"
+      }
+    ]
+  },
+  {
+    "id": "GDI202",
+    "text": "¿Cuáles de los siguientes grupos de valor e interés participaron en la toma de decisiones sobre la implementación de la Política de Gobierno Digital en la entidad?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Academia"
+      },
+      {
+        "neg": 0,
+        "label": "Sector privado"
+      },
+      {
+        "neg": 0,
+        "label": "Sociedad civil"
+      },
+      {
+        "neg": 0,
+        "label": "Ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Otras. ¿Cuáles?:"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguno de los anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI203",
+    "text": "Con respecto a los ejercicios de participación realizados por la entidad con sus grupos de valor e interés (ciudadanía, sociedad civil, academia, sector privado y sector público) durante la vigencia 2026 indique:",
+    "tipo": "Selección múltiple numérica",
+    "options": [
+      {
+        "neg": 0,
+        "label": "¿Cuántos ejercicios de consulta o toma de decisiones realizó la entidad con sus grupos de interés?"
+      },
+      {
+        "neg": 0,
+        "label": "¿Cuántos de los ejercicios de consulta o toma de decisiones se realizaron usando medios digitales?"
+      }
+    ]
+  },
+  {
+    "id": "GDI204",
+    "text": "La participación de los grupos de valor o de interés en la toma de decisiones sobre la implementación de la Política de Gobierno Digital, le ha permitido a la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Generar alianzas para resolver problemas de interés común. Especifique cuales:"
+      },
+      {
+        "neg": 0,
+        "label": "Informar a sus grupos de interés sobre el manejo y uso de los recursos de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Generar confianza en los grupos de interés (ciudadanía, sociedad civil, academia, sector privado y sector público) sobre la gestión de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Ser eficaz en la resolución de problemáticas internas de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Ser eficiente en la gestión a partir de la retroalimentación de los grupos de interés"
+      },
+      {
+        "neg": 0,
+        "label": "Satisfacer necesidades de los grupos de interés a través de los trámites y servicios que les ofrece"
+      },
+      {
+        "neg": 0,
+        "label": "Desarrollar proyectos, programas e iniciativas que buscan impactar positivamente la vida de las personas"
+      },
+      {
+        "neg": 0,
+        "label": "Otras. ¿Cuáles?:"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI205",
+    "text": "¿La entidad implementó en sus proyectos un enfoque experimental que le permita generar soluciones novedosas y creativas haciendo uso de TIC, con la participación de los grupos de interés (ciudadanía, academia, sector privado, sector público)?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y esos proyectos con enfoque experimental están incluidos en el Plan de Acción Anual de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Sí, pero esos proyectos con enfoque experimental no se han integrado al Plan de Acción Anual de la entidad"
+      },
+      {
+        "neg": 1,
+        "label": "No se ha adoptado un enfoque experimental en los proyectos de la entidad"
+      }
+    ]
+  },
+  {
+    "id": "GDI206",
+    "text": "Durante la vigencia 2026, ¿Qué actividades de innovación basadas en el enfoque experimental llevó a cabo la entidad haciendo uso de las TIC?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Identificación de los beneficiarios de las soluciones novedosas y creativas generadas mediante el uso de las TIC y metodologías de innovación. Indique el número de beneficiarios:"
+      },
+      {
+        "neg": 0,
+        "label": "Formulación y prueba de hipótesis, validación y ensayos de alternativas de solución (prototipos), antes de su implementación como “solución final”"
+      },
+      {
+        "neg": 0,
+        "label": "Participación en actividades externas a la entidad con enfoque experimental, por ejemplo: espacios de cocreación, capacitaciones, redes de conocimiento"
+      },
+      {
+        "neg": 0,
+        "label": "Desarrollo de soluciones novedosas y creativas que hacen uso de las TIC y de metodologías de innovación"
+      },
+      {
+        "neg": 0,
+        "label": "Desarrollo de prototipos o productos mínimos viables"
+      },
+      {
+        "neg": 1,
+        "label": "No se realizaron actividades de innovación pública digital"
+      }
+    ]
+  },
+  {
+    "id": "GDI207",
+    "text": "¿Qué beneficios obtuvo la entidad al aplicar el enfoque experimental en sus iniciativas o proyectos que hacen uso de las TIC?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Optimización de tiempo o recursos (infraestructura física, consumo de papel, tecnológica, talento humano y presupuesto) en la ejecución de procesos, trámites, servicios o proyectos de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Fortalecimiento de capacidades de los servidores o procesos de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Establecimiento de alianzas con grupos de interés (ciudadanía, sociedad civil, academia, sector privado y sector público)"
+      },
+      {
+        "neg": 0,
+        "label": "Mayor satisfacción de los usuarios de los trámites o servicios de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Las mediciones adelantadas por la entidad evidencian que el enfoque experimental no ha generado beneficios"
+      },
+      {
+        "neg": 1,
+        "label": "No se hacen mediciones de los beneficios de la aplicación del enfoque experimental"
+      }
+    ]
+  },
+  {
+    "id": "GDI208",
+    "text": "¿Qué tipo de acciones de innovación pública digital se llevaron a cabo a través de alianzas con otros actores o de laboratorios propios de innovación?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Identificación de problemáticas y retos públicos"
+      },
+      {
+        "neg": 0,
+        "label": "Generación de proyectos, iniciativas o \nmetas compartidas de fortalecimiento institucional"
+      },
+      {
+        "neg": 0,
+        "label": "Producción y generación de datos e información"
+      },
+      {
+        "neg": 0,
+        "label": "Investigaciones o desarrollos tecnológicos o de innovación"
+      },
+      {
+        "neg": 0,
+        "label": "Gestión de recursos o sponsor"
+      },
+      {
+        "neg": 0,
+        "label": "Obtención de apoyo técnico"
+      },
+      {
+        "neg": 0,
+        "label": "Participación en redes de conocimiento o en comunidades de práctica"
+      },
+      {
+        "neg": 0,
+        "label": "Participación en conferencias o eventos de innovación"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no cuenta con alianzas con otros actores para experimentar en el desarrollo de soluciones a retos públicos a través del uso de las TIC"
+      }
+    ]
+  },
+  {
+    "id": "GDI209",
+    "text": "¿Qué beneficios obtuvo la entidad a través de las alianzas con otros actores o laboratorios de innovación para experimentar en el desarrollo de soluciones a retos públicos a través del uso de las TIC?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Financiación de los proyectos o iniciativas de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Aprovechamiento de espacios que incentivan la innovación pública digital, sin comprometer los recursos de la entidad. (Bootcamps, pilotos, hackatones, etc)"
+      },
+      {
+        "neg": 0,
+        "label": "Fortalecimiento de las capacidades en los servidores públicos de la entidad. (Como cursos, diplomados, certificaciones, etc)"
+      },
+      {
+        "neg": 0,
+        "label": "Apoyo técnico para abordar los proyectos o iniciativas de la entidad o desarrollo colaborativo para la solución de retos públicos"
+      },
+      {
+        "neg": 0,
+        "label": "Identificación de actores relevantes en el ecosistema de la innovación pública digital"
+      },
+      {
+        "neg": 1,
+        "label": "No se identificaron beneficios"
+      }
+    ]
+  },
+  {
+    "id": "GDI210",
+    "text": "¿Cuáles de las siguientes tecnologías emergentes de la cuarta revolución industrial utilizó la entidad para desarrollar procesos de innovación pública digital?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Tecnologías de desintermediación, DLT (Distributed Ledger Technology) como cadena de bloques (Blockchain) o contratos inteligentes, entre otros"
+      },
+      {
+        "neg": 0,
+        "label": "Análisis masivo de datos (Big data)"
+      },
+      {
+        "neg": 0,
+        "label": "Inteligencia Artificial (AI)"
+      },
+      {
+        "neg": 0,
+        "label": "Internet de las Cosas (IoT)"
+      },
+      {
+        "neg": 0,
+        "label": "Robótica y similares"
+      },
+      {
+        "neg": 0,
+        "label": "Realidad aumentada o realidad virtual"
+      },
+      {
+        "neg": 0,
+        "label": "Automatización robótica de procesos"
+      },
+      {
+        "neg": 0,
+        "label": "Otras. ¿Cuáles?:"
+      },
+      {
+        "neg": 1,
+        "label": "No se usan tecnologías emergentes para la innovación pública digital"
+      }
+    ]
+  },
+  {
+    "id": "GDI211",
+    "text": "¿La entidad adquirió bienes o servicios de base tecnológica para dar respuesta a desafíos públicos con enfoque en innovación pública digital?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Si. Ingrese las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GDI212",
+    "text": "¿Cuál fue el esquema preponderante para adquirir bienes y servicios de base tecnológica?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Compra Pública PreComercial (Ciencia, tecnología e innovación)"
+      },
+      {
+        "neg": 0,
+        "label": "Compra Pública para la Innovación. (Decreto 442 del 2022)"
+      },
+      {
+        "neg": 0,
+        "label": "Compra Pública para incentivar la Innovación (convocatorias de laboratorios de innovación)"
+      },
+      {
+        "neg": 0,
+        "label": "Otro. ¿Cuál?:"
+      }
+    ]
+  },
+  {
+    "id": "GDI213",
+    "text": "En relación con las iniciativas de innovación pública digital, ¿qué barreras encuentra actualmente la entidad para implementarlas?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Falta de capital humano (conocimientos específicos alrededor de la innovación pública digital)"
+      },
+      {
+        "neg": 0,
+        "label": "Falta de apoyo de las personas que hacen parte del nivel decisorio"
+      },
+      {
+        "neg": 0,
+        "label": "Barreras normativas"
+      },
+      {
+        "neg": 0,
+        "label": "Falta de recursos financieros"
+      },
+      {
+        "neg": 0,
+        "label": "Falta de una cultura de la innovación"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI214",
+    "text": "¿Cuáles de los siguientes modelos del Marco de Referencia de Arquitectura Empresarial (MRAE) implementó la entidad durante la vigencia 2026?:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Modelo de Arquitectura Empresarial (MAE)"
+      },
+      {
+        "neg": 0,
+        "label": "Modelo de Gestión y Gobierno de TI (MGGTI)"
+      },
+      {
+        "neg": 0,
+        "label": "Modelo de Gestión de Proyectos de TI (MGPTI)"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguno de los anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI215",
+    "text": "Con respecto al Plan Estratégico de Tecnologías de la Información (PETI), la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Lo formuló, se aprobó y se integró al Plan de Acción Anual del 2026"
+      },
+      {
+        "neg": 0,
+        "label": "Elaboró un tablero de control con indicadores para hacer seguimiento a su implementación durante la vigencia 2026"
+      },
+      {
+        "neg": 0,
+        "label": "Implementó la hoja de ruta definida en el PETI de la vigencia 2026"
+      },
+      {
+        "neg": 0,
+        "label": "Lo actualizó y publicó en la sede electrónica de la entidad el PETI de la vigencia 2026"
+      },
+      {
+        "neg": 1,
+        "label": "No se formuló el PETI de la vigencia 2026"
+      }
+    ]
+  },
+  {
+    "id": "GDI216",
+    "text": "Respecto a los ejercicios de Arquitectura Empresarial realizados por la entidad durante la vigencia 2026:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Integró el proceso de Arquitectura Empresarial al Sistema de Gestión de Calidad de la Entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Estableció indicadores de seguimiento a la ejecución del proceso de Arquitectura Empresarial"
+      },
+      {
+        "neg": 0,
+        "label": "Asignó los roles necesarios para implementar el proceso de Arquitectura Empresarial en la Entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Definió y utilizó un repositorio para almacenar los productos generados en el proceso de Arquitectura Empresarial"
+      },
+      {
+        "neg": 0,
+        "label": "Desarrolló una hoja de ruta de Arquitectura Empresarial y hace seguimiento a su implementación"
+      },
+      {
+        "neg": 0,
+        "label": "Ejecutó el proceso de Arquitectura Empresarial en la Entidad durante la vigencia 2026"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no ha realizado ejercicios de Arquitectura Empresarial"
+      }
+    ]
+  },
+  {
+    "id": "GDI217",
+    "text": "Con respecto a la gestión de proyectos con componentes de TI durante la vigencia 2026, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Integró el proceso de Gestión de Proyectos de TI al Sistema de Gestión de Calidad de la Entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Estableció los planes de comunicaciones para la gestión de cada proyecto con componentes de TI"
+      },
+      {
+        "neg": 0,
+        "label": "Determinó el alcance y se priorizaron las actividades de cada proyecto"
+      },
+      {
+        "neg": 0,
+        "label": "Realizó seguimiento a su ejecución a través de indicadores de eficiencia y eficacia"
+      },
+      {
+        "neg": 0,
+        "label": "Realizó análisis y tratamiento de riesgos"
+      },
+      {
+        "neg": 0,
+        "label": "Estableció la metodología para gestión de proyectos con componentes de TI"
+      },
+      {
+        "neg": 0,
+        "label": "Documentó las lecciones aprendidas de los proyectos gestionados"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de los anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI218",
+    "text": "Con respecto a la gestión y gobierno de TI durante la vigencia 2026, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Definió un catálogo de servicios de TI"
+      },
+      {
+        "neg": 0,
+        "label": "Definió un proceso de gestión y gobierno de TI, formalizado a través del Sistema Integrado de Gestión de Calidad de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Hizo seguimiento a los procesos asociados a la gestión y gobierno de TI mediante indicadores de eficiencia y eficacia"
+      },
+      {
+        "neg": 0,
+        "label": "Desarrolló e implementó una estrategia de uso y apropiación de tecnologías actuales y emergentes, por ejemplo: blockchain (cadena de bloques), inteligencia artificial, internet de las cosas (IoT), automatización robótica de procesos"
+      },
+      {
+        "neg": 0,
+        "label": "Consolidó el conocimiento y las lecciones aprendidas del área de TI"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI219",
+    "text": "¿En qué fase del modelo de adopción de IPv6 se encuentra la entidad?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Fase 1: De planeación"
+      },
+      {
+        "neg": 0,
+        "label": "Fase 2: De implementación de IPv6"
+      },
+      {
+        "neg": 0,
+        "label": "Fase 3: De pruebas de funcionalidad"
+      },
+      {
+        "neg": 1,
+        "label": "En la entidad no se ha desarrollado el modelo de adopción de IPV6"
+      }
+    ]
+  },
+  {
+    "id": "GDI220",
+    "text": "¿Qué actividades de la fase 1 del modelo de adopción de IPv6 ya implementó la entidad?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Inventario de TI"
+      },
+      {
+        "neg": 0,
+        "label": "Plan de diagnóstico"
+      },
+      {
+        "neg": 0,
+        "label": "Plan de direccionamiento IPv6"
+      },
+      {
+        "neg": 0,
+        "label": "Diseño detallado de red"
+      },
+      {
+        "neg": 0,
+        "label": "Plan de contingencias para IPv6"
+      }
+    ]
+  },
+  {
+    "id": "GDI221",
+    "text": "¿Qué actividades de las fases 2 y 3 del modelo de adopción de IPv6 ya implementó la entidad?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Documento de activación de políticas de seguridad para IPv6 (Fase 2)"
+      },
+      {
+        "neg": 0,
+        "label": "Informe de pruebas piloto y de implementación de IPv6 (Fase 2 y 3)"
+      },
+      {
+        "neg": 0,
+        "label": "Acta de cumplimiento a satisfacción sobre el funcionamiento e implementación de los elementos que fueron intervenidos con IPv6"
+      }
+    ]
+  },
+  {
+    "id": "GDI222",
+    "text": "¿La entidad reportó en la herramienta de seguimiento habilitada por el Ministerio TIC (https://micrositios.mintic.gov.co/ipv6/control/app/login.php) el avance en la adopción de IPv6?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Si. Ingrese las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GDI223",
+    "text": "¿La entidad está registrada en la Tienda Virtual del Estado Colombiano (TVEC)?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Si. Ingrese las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      },
+      {
+        "neg": 1,
+        "label": "No aplica. Justifique la razón:"
+      }
+    ]
+  },
+  {
+    "id": "GDI224",
+    "text": "Para la adquisición de productos, bienes y servicios de TI durante la vigencia 2026, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Utilizó los Acuerdos Marco de Precios (AMP)  o Instrumentos de Agregación de demanda (IAD) disponibles en la Tienda Virtual del Estado Colombiano (TVEC). Indique cuáles:"
+      },
+      {
+        "neg": 0,
+        "label": "Utilizó las grandes superficies disponibles en la Tienda Virtual del Estado Colombiano (TVEC). Indique cuáles superficies y qué productos:"
+      },
+      {
+        "neg": 0,
+        "label": "Implementó criterios de eficiencia energética y restricción a la utilización de sustancias peligrosas en la fabricación de aparatos eléctricos y electrónicos que pueda afectar a la salud humana"
+      },
+      {
+        "neg": 0,
+        "label": "Utilizó otras modalidades de adquisición. Especifique cuáles:"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no adquirió productos, bienes o servicios de TI"
+      }
+    ]
+  },
+  {
+    "id": "GDI225",
+    "text": "¿La entidad participó durante la vigencia 2026 en la generación de Acuerdos Marco de Precios?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí. Indique cuáles:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GDI226",
+    "text": "Indique los grupos que fueron capacitados por la entidad en temáticas de la Política de Gobierno Digital durante la vigencia 2026:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Servidores"
+      },
+      {
+        "neg": 0,
+        "label": "Contratistas"
+      },
+      {
+        "neg": 0,
+        "label": "Grupos de valor e interés (ciudadanía, sector privado, sociedad civil, academia, otras entidades públicas)"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no implementó estrategias de capacitación sobre la Política de Gobierno Digital"
+      }
+    ]
+  },
+  {
+    "id": "GDI227",
+    "text": "Indique las estrategias que implementó la entidad durante la vigencia 2026 para capacitar a servidores y contratistas en la Política de Gobierno Digital:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Cursos dispuestos por el Ministerio de Tecnologías de la Información y las Comunicaciones"
+      },
+      {
+        "neg": 0,
+        "label": "Capacitaciones dispuestas en el Plan de Capacitaciones de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Otras estrategias. Indique cuáles:"
+      }
+    ]
+  },
+  {
+    "id": "GDI228",
+    "text": "¿Cuáles de las siguientes temáticas de la Política de Gobierno Digital incluyó la entidad en sus estrategias de capacitación a servidores y contratistas durante la vigencia 2026?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Gobernanza"
+      },
+      {
+        "neg": 0,
+        "label": "Innovación Pública Digital"
+      },
+      {
+        "neg": 0,
+        "label": "Arquitectura de TI"
+      },
+      {
+        "neg": 0,
+        "label": "Seguridad y Privacidad de la Información"
+      },
+      {
+        "neg": 0,
+        "label": "Cultura y apropiación"
+      },
+      {
+        "neg": 0,
+        "label": "Servicios Ciudadanos Digitales"
+      },
+      {
+        "neg": 0,
+        "label": "Decisiones basadas en datos"
+      },
+      {
+        "neg": 0,
+        "label": "Estado Abierto"
+      },
+      {
+        "neg": 0,
+        "label": "Servicios y Procesos Inteligentes"
+      },
+      {
+        "neg": 0,
+        "label": "Proyectos de Transformación Digital"
+      },
+      {
+        "neg": 0,
+        "label": "Estrategias de Ciudades y Territorios Inteligentes"
+      },
+      {
+        "neg": 0,
+        "label": "Otras temáticas de la Política de Gobierno Digital. Indique cuáles:"
+      }
+    ]
+  },
+  {
+    "id": "GDI229",
+    "text": "Indique las estrategias que se implementaron durante la vigencia 2026 para capacitar a los grupos de valor e interés en el uso de los medios digitales dispuestos para acceder a la oferta institucional e interactuar con la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Cursos en línea dispuestos en la sede electrónica de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Talleres o capacitaciones virtuales realizadas por la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Talleres o capacitaciones presenciales realizadas por la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Otras estrategias. Indique cuáles:"
+      }
+    ]
+  },
+  {
+    "id": "GDI230",
+    "text": "¿Cuáles de las siguientes temáticas abordó la entidad en las estrategias de capacitación a sus grupos de valor e interés durante la vigencia 2026?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Acceso a información publicada en la sede electrónica de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Uso de canales de atención virtual"
+      },
+      {
+        "neg": 0,
+        "label": "Gestión de PQRSD a través de la sede electrónica de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Acceso a trámites y servicios digitales dispuestos por la entidad a través de su sede electrónica"
+      },
+      {
+        "neg": 0,
+        "label": "Participación en la gestión institucional a través de medios digitales"
+      },
+      {
+        "neg": 0,
+        "label": "Otras temáticas. Indique cuáles:"
+      }
+    ]
+  },
+  {
+    "id": "GDI231",
+    "text": "¿La entidad ha implementado el Modelo de Seguridad y Privacidad de la Información (MSPI)?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GDI232",
+    "text": "¿La entidad elaboró un diagnóstico de seguridad y privacidad de la información para la vigencia 2026, construido a través de la herramienta de autodiagnóstico del Modelo de Seguridad y Privacidad de la Información (MSPI)?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Se elaboró y se aprobó por parte del Comité de Gestión y Desempeño Institucional"
+      },
+      {
+        "neg": 0,
+        "label": "Se elaboró, pero no se aprobó por parte del Comité de Gestión y Desempeño Institucional"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GDI233",
+    "text": "La política de seguridad y privacidad de la información de la entidad:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Está formulada, aprobada, implementada y se actualiza mediante un proceso de mejora continua"
+      },
+      {
+        "neg": 0,
+        "label": "Está formulada, aprobada e implementada, pero no se actualiza mediante un proceso de mejora continua"
+      },
+      {
+        "neg": 0,
+        "label": "Está formulada y aprobada por el Comité de Gestión y Desempeño Institucional, pero aún no ha sido implementada"
+      },
+      {
+        "neg": 0,
+        "label": "Está formulada pero no ha sido aprobada por el Comité de Gestión y Desempeño Institucional"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no cuenta con una política de seguridad y privacidad de la información"
+      }
+    ]
+  },
+  {
+    "id": "GDI234",
+    "text": "Respecto de los procedimientos de seguridad y privacidad de la información, la entidad:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Los definió, aprobó, implementó, y se actualizaron mediante un proceso de mejora continua"
+      },
+      {
+        "neg": 0,
+        "label": "Los definió, aprobó e implementó, pero no se actualizaron mediante un proceso de mejora continua"
+      },
+      {
+        "neg": 0,
+        "label": "Contó con procedimientos definidos y aprobados por el Comité de Gestión y Desempeño Institucional, pero no han sido implementados"
+      },
+      {
+        "neg": 0,
+        "label": "Contó con procedimientos definidos y documentados, pero no han sido aprobados por el Comité de Gestión y Desempeño Institucional"
+      },
+      {
+        "neg": 1,
+        "label": "No cuenta con procedimientos de seguridad y privacidad de la información o están en proceso de construcción"
+      }
+    ]
+  },
+  {
+    "id": "GDI235",
+    "text": "Con respecto al inventario de activos de seguridad y privacidad de la información de la entidad:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "El inventario estaba aprobado, clasificado y se actualiza mediante un proceso de mejora continua"
+      },
+      {
+        "neg": 0,
+        "label": "El inventario estaba aprobado y clasificado, pero no se actualiza mediante un proceso de mejora continua"
+      },
+      {
+        "neg": 0,
+        "label": "Se contó con el inventario y estaba aprobado por el Comité de Gestión y Desempeño Institucional"
+      },
+      {
+        "neg": 0,
+        "label": "Se contó con el inventario, pero no ha sido aprobado por el Comité de Gestión y Desempeño Institucional"
+      },
+      {
+        "neg": 1,
+        "label": "No cuenta con el inventario de activos de seguridad y privacidad de la información o está en proceso de construcción"
+      }
+    ]
+  },
+  {
+    "id": "GDI236",
+    "text": "Con respecto a los riesgos de seguridad y privacidad de la información de la entidad:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Los identificó, están aprobados, se implementó un proceso para valorarlos y se actualizan mediante un proceso de mejora continua"
+      },
+      {
+        "neg": 0,
+        "label": "Los identificó, están aprobados y se implementó un proceso para valorarlos, pero no se actualizan mediante un proceso de mejora continua"
+      },
+      {
+        "neg": 0,
+        "label": "Los identificó y están aprobados por el Comité de Gestión y Desempeño Institucional, pero aún no se implementa un proceso para valorarlos"
+      },
+      {
+        "neg": 0,
+        "label": "Los identificó, pero no han sido aprobados por el Comité de Gestión y Desempeño Institucional"
+      },
+      {
+        "neg": 1,
+        "label": "No se han identificado los riesgos de seguridad y privacidad de la información"
+      }
+    ]
+  },
+  {
+    "id": "GDI237",
+    "text": "¿La entidad implementó el plan de tratamiento de riesgos de seguridad de la información?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Está en proceso de implementarlo. Ingrese las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GDI238",
+    "text": "Con respecto al plan operacional de seguridad y privacidad de la información de la entidad:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "El plan estaba aprobado, implementado y se actualiza mediante un proceso de mejora continua"
+      },
+      {
+        "neg": 0,
+        "label": "El plan estaba aprobado y se implementó, pero no se actualiza mediante un proceso de mejora continua"
+      },
+      {
+        "neg": 0,
+        "label": "Se contó con un plan y fue aprobado por el Comité de Gestión y Desempeño Institucional"
+      },
+      {
+        "neg": 0,
+        "label": "Se contó con un plan, pero no ha sido aprobado"
+      },
+      {
+        "neg": 1,
+        "label": "No se cuenta con un plan operacional de seguridad y privacidad de la información"
+      }
+    ]
+  },
+  {
+    "id": "GDI239",
+    "text": "Con respecto a los indicadores de implementación del Modelo de Seguridad y Privacidad de la Información (MSPI), la entidad:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Los definió, aprobó, implementó y se actualizaron mediante un proceso de mejora continua"
+      },
+      {
+        "neg": 0,
+        "label": "Los definió, aprobó e implementó, pero no se actualizaron mediante un proceso de mejora continua"
+      },
+      {
+        "neg": 0,
+        "label": "Los definió y aprobó el Comité de Gestión y Desempeño Institucional, pero no los implementó"
+      },
+      {
+        "neg": 0,
+        "label": "Los definió, pero no han sido aprobados por el Comité de Gestión y Desempeño Institucional"
+      },
+      {
+        "neg": 1,
+        "label": "No se han definido indicadores para medir la eficiencia y eficacia de la implementación del MSPI en la entidad"
+      }
+    ]
+  },
+  {
+    "id": "GDI240",
+    "text": "Con respecto a las auditorías de seguridad de la información de la vigencia 2026:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "La entidad realizó auditorías internas, externas y de certificación o recertificación respecto al estándar ISO 27001"
+      },
+      {
+        "neg": 0,
+        "label": "La entidad realizó auditorías internas y externas, pero no de certificación o recertificación respecto al estándar ISO 27001"
+      },
+      {
+        "neg": 0,
+        "label": "La entidad solo realizó auditorías internas"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no priorizó este tema en su plan anual de auditorías (universo de unidades auditables)"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no realizó auditorías"
+      }
+    ]
+  },
+  {
+    "id": "GDI241",
+    "text": "Para vincularse al servicio de interoperabilidad, ¿la entidad dispuso de un servidor con las características establecidas en el anexo 2 del Decreto 620 de 2020?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GDI242",
+    "text": "El servicio de interoperabilidad a través de la plataforma X-ROAD le ha permitido a la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Reducir los tiempos de respuesta de los trámites. Indique cuánto tiempo promedio por trámite para la vigencia 2026: 1 a 24hrs en tramites automatizados"
+      },
+      {
+        "neg": 0,
+        "label": "Reducir los costos de operación. Indique el monto en pesos para la vigencia 2026:"
+      },
+      {
+        "neg": 0,
+        "label": "Otros beneficios. Indique cuáles:"
+      },
+      {
+        "neg": 0,
+        "label": "Según las mediciones adelantadas por la entidad, el servicio de Interoperabilidad no le ha generado beneficios. Ingrese las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no ha desarrollado mediciones para evaluar los beneficios de utilizar el servicio de Interoperabilidad"
+      }
+    ]
+  },
+  {
+    "id": "GDI243",
+    "text": "Indique el promedio mensual de transacciones proyectadas a realizar por la entidad en la vigencia 2026 a través de la plataforma de interoperabilidad X-ROAD:",
+    "tipo": "Abierta numérica",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Registre el valor:"
+      }
+    ]
+  },
+  {
+    "id": "GDI244",
+    "text": "Para apoyar la toma de decisiones relacionadas con su misionalidad, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Utilizó datos propios de la entidad. Especifique cuáles:"
+      },
+      {
+        "neg": 0,
+        "label": "Utilizó datos externos a la entidad. Especifique cuáles:"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no toma decisiones basadas en datos"
+      }
+    ]
+  },
+  {
+    "id": "GDI245",
+    "text": "En cuáles de los siguientes niveles la entidad toma decisiones basadas en datos:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Estratégico: es el nivel en el que se definen las políticas, estrategias y prioridades para el desarrollo de la infraestructura de datos. Determina los objetivos a largo plazo y el modo en que las partes interesadas han de interactuar entre sí"
+      },
+      {
+        "neg": 0,
+        "label": "Táctico: es el nivel en el que se elaboran los planes, programas, iniciativas, proyectos, procesos y procedimientos para alcanzar los objetivos definidos por el nivel estratégico. Efectúa el control de la gestión realizada por el nivel operacional y soporta las decisiones que se toman y que afectan a las múltiples partes interesadas"
+      },
+      {
+        "neg": 0,
+        "label": "Operacional: es el nivel en el que se implementan y llevan a cabo los lineamientos, actividades y tareas definidas en los planes, iniciativas, proyectos y procedimientos acordados por el nivel táctico"
+      }
+    ]
+  },
+  {
+    "id": "GDI246",
+    "text": "¿Cuáles de las siguientes fases del ciclo de vida del dato se gestionaron en la entidad durante la vigencia evaluada?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Creación"
+      },
+      {
+        "neg": 0,
+        "label": "Procesamiento"
+      },
+      {
+        "neg": 0,
+        "label": "Almacenamiento"
+      },
+      {
+        "neg": 0,
+        "label": "Intercambio"
+      },
+      {
+        "neg": 0,
+        "label": "Uso y análisis de datos"
+      },
+      {
+        "neg": 0,
+        "label": "Archivo y preservación"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no gestionó ninguna fase del ciclo de vida del dato"
+      }
+    ]
+  },
+  {
+    "id": "GDI247",
+    "text": "¿Cuáles de las siguientes características cumplieron los conjuntos de datos utilizados por la entidad en el desarrollo o mantenimiento de soluciones basadas en datos?:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Consistencia: son coherentes con otros datos de su mismo contexto de uso y utilizan la misma codificación de variables y etiquetas"
+      },
+      {
+        "neg": 0,
+        "label": "Precisión: se presentan desde su fuente primaria, cuentan con atributos que son exactos o proporcionan discernimiento en un contexto de uso específico"
+      },
+      {
+        "neg": 0,
+        "label": "Completitud: están diligenciados y tienen valores para todos los atributos esperados y están disponibles para su uso"
+      },
+      {
+        "neg": 0,
+        "label": "Actualidad: representa la vigencia, disponibilidad y validez de los datos para ser usados cuando se necesitan"
+      },
+      {
+        "neg": 0,
+        "label": "Coherencia: cuando están libres de contradicción y son coherentes respecto a otros datos en el mismo contexto de uso"
+      },
+      {
+        "neg": 0,
+        "label": "Unicidad: son únicos, no se encuentran duplicados y no generan confusión"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI248",
+    "text": "Cuáles de las siguientes técnicas de análisis de datos implementó la entidad durante la vigencia evaluada:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Análisis descriptivo, es decir, utiliza técnicas estadísticas para describir una situación pasada o actual"
+      },
+      {
+        "neg": 0,
+        "label": "Análisis de causalidad, es decir, hace uso de técnicas estadísticas de causalidad (causa y efecto), donde se analiza cómo un conjunto de variables puede afectar el comportamiento de otra variable"
+      },
+      {
+        "neg": 0,
+        "label": "Análisis predictivo, es decir, realiza análisis estadísticos o de aprendizaje de máquina para predecir las tendencias o posibles comportamientos futuros de una variable"
+      },
+      {
+        "neg": 0,
+        "label": "Análisis prescriptivo, es decir, incorpora algoritmos de optimización, análisis de decisión multicriterio y reglas de negocio, con el propósito de establecer cuál es la mejor acción (actual o futura) a tomar bajo un contexto especifico"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI249",
+    "text": "Con respecto a la gestión de datos, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Documentó e implementó un modelo de gobierno de datos"
+      },
+      {
+        "neg": 0,
+        "label": "Contó con un inventario y diccionario de datos"
+      },
+      {
+        "neg": 0,
+        "label": "Evaluó las capacidades y competencias de la entidad con relación al uso y explotación de datos"
+      },
+      {
+        "neg": 0,
+        "label": "Evaluó la implementación de lineamientos en materia de datos"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI250",
+    "text": "Para la gestión de datos maestros, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Contó con un catálogo interno de datos maestros"
+      },
+      {
+        "neg": 0,
+        "label": "Identificó cuáles de los datos maestros son datos de referencia"
+      },
+      {
+        "neg": 0,
+        "label": "Contó con una plataforma para la gestión y distribución de datos maestros"
+      },
+      {
+        "neg": 0,
+        "label": "Contó con un proceso para la gestión de datos maestros"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI251",
+    "text": "¿Cuáles son las razones por las que la entidad no tomó decisiones basadas en datos?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "La entidad considera que no requiere del uso de datos para tomar decisiones relacionadas con su misionalidad"
+      },
+      {
+        "neg": 0,
+        "label": "La entidad no contó con el capital humano requerido"
+      },
+      {
+        "neg": 0,
+        "label": "La entidad no contó con la infraestructura tecnológica requerida"
+      },
+      {
+        "neg": 0,
+        "label": "La gestión y el gobierno de los datos son insuficientes para tener datos que permitan tomar decisiones"
+      },
+      {
+        "neg": 0,
+        "label": "Otras. ¿Cuáles?:"
+      }
+    ]
+  },
+  {
+    "id": "GDI252",
+    "text": "Señale los criterios de accesibilidad web, establecidos en el anexo 1 de la Resolución 1519 de 2020, que cumplió la entidad durante la vigencia evaluada en todas las secciones de su Sede Electrónica:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "CC1. Alternativa texto para elementos no textuales"
+      },
+      {
+        "neg": 0,
+        "label": "CC2. Complemento para videos o elementos multimedia"
+      },
+      {
+        "neg": 0,
+        "label": "CC3. Guion para solo video y solo audio"
+      },
+      {
+        "neg": 0,
+        "label": "CC4. Textos e imágenes ampliables y en tamaños adecuados"
+      },
+      {
+        "neg": 0,
+        "label": "CC5.Contraste de color suficiente en textos e imágenes"
+      },
+      {
+        "neg": 0,
+        "label": "CC6. Imágenes alternas al texto cuando sea posible"
+      },
+      {
+        "neg": 0,
+        "label": "CC7. Identificación coherente"
+      },
+      {
+        "neg": 0,
+        "label": "CC8. Todo documento y página organizado en secciones"
+      },
+      {
+        "neg": 0,
+        "label": "CC9. Contenedores como tablas y listas usados correctamente"
+      },
+      {
+        "neg": 0,
+        "label": "CC10. Permitir saltar bloques que se repiten"
+      },
+      {
+        "neg": 0,
+        "label": "CC11. Lenguaje de marcado bien utilizado"
+      },
+      {
+        "neg": 0,
+        "label": "CC12. Permitir encontrar las páginas por múltiples vías"
+      },
+      {
+        "neg": 0,
+        "label": "CC13. Navegación coherente"
+      },
+      {
+        "neg": 0,
+        "label": "CC14. Orden adecuado de los contenidos si es significativo"
+      },
+      {
+        "neg": 0,
+        "label": "CC15. Advertencias bien ubicadas"
+      },
+      {
+        "neg": 0,
+        "label": "CC16. Orden adecuado de los elementos al navegar con tabulación"
+      },
+      {
+        "neg": 0,
+        "label": "CC17. Foco visible al navegar con tabulación"
+      },
+      {
+        "neg": 0,
+        "label": "CC18. No utilizar audio automático"
+      },
+      {
+        "neg": 0,
+        "label": "CC19. Permitir control de eventos temporizados"
+      },
+      {
+        "neg": 0,
+        "label": "CC20. Permitir control de contenidos con movimiento y parpadeo"
+      },
+      {
+        "neg": 0,
+        "label": "CC21. No generar actualización automática de páginas"
+      },
+      {
+        "neg": 0,
+        "label": "CC22. No generar cambios automáticos al recibir el foco o entradas"
+      },
+      {
+        "neg": 0,
+        "label": "CC23. Utilice textos adecuados en títulos, páginas y secciones"
+      },
+      {
+        "neg": 0,
+        "label": "CC24. Utilice nombres e indicaciones claras en campos de formulario"
+      },
+      {
+        "neg": 0,
+        "label": "CC25. Utilice instrucciones expresas y claras"
+      },
+      {
+        "neg": 0,
+        "label": "CC26. Enlaces adecuados"
+      },
+      {
+        "neg": 0,
+        "label": "CC27. Idioma"
+      },
+      {
+        "neg": 0,
+        "label": "CC28. Manejo del error"
+      },
+      {
+        "neg": 0,
+        "label": "CC29. Imágenes de texto"
+      },
+      {
+        "neg": 0,
+        "label": "CC30. Objetos programados"
+      },
+      {
+        "neg": 0,
+        "label": "CC31. Desde una letra hasta un elemento complejo utilizable"
+      },
+      {
+        "neg": 0,
+        "label": "CC32. Manejable por teclado"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI253",
+    "text": "¿La entidad generó o actualizó conjuntos de datos abiertos propios durante la vigencia evaluada?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      },
+      {
+        "neg": 1,
+        "label": "No tienen conocimiento al respecto"
+      }
+    ]
+  },
+  {
+    "id": "GDI254",
+    "text": "Con respecto a los requisitos sobre conjuntos de datos abiertos establecidos en el anexo 4 de la Resolución 1519 de 2020, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Cargó el registro de activos de información y el análisis de criticidad a través de la herramienta dispuesta en el Portal de Datos Abiertos www.datos.gov.co"
+      },
+      {
+        "neg": 0,
+        "label": "Aprobó y publicó la licencia de datos abiertos, mediante la cual se determina el alcance, uso y aprovechamiento que los particulares o terceros interesados puedan efectuar sobre los mismos"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI255",
+    "text": "¿La entidad cuenta con un portal propio de datos abiertos?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y se encuentra federado al Portal de Datos Abiertos (www.datos.gov.co)"
+      },
+      {
+        "neg": 0,
+        "label": "Sí, pero no se encuentra federado al Portal de Datos Abiertos (www.datos.gov.co). Ingrese la URL del portal propio de datos abiertos:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GDI256",
+    "text": "Con respecto a los datos abiertos de la entidad, indique:",
+    "tipo": "Selección múltiple numérica",
+    "options": [
+      {
+        "neg": 0,
+        "label": "¿Cuántos conjuntos de datos abiertos estratégicos (por ej. aquellos que contribuyen al logro de la misión institucional, de alto impacto social, más demandados) fueron identificados?"
+      },
+      {
+        "neg": 0,
+        "label": "¿Cuántos de los conjuntos de datos abiertos estratégicos identificados fueron publicados en el catálogo de datos del Estado colombiano www.datos.gov.co?"
+      },
+      {
+        "neg": 0,
+        "label": "¿Cuántos de los conjuntos de datos abiertos estratégicos fueron publicados, están actualizados y fueron difundidos?"
+      },
+      {
+        "neg": 0,
+        "label": "¿Cuántos de los conjuntos de datos abiertos estratégicos de la entidad fueron utilizados en procesos de cocreación o consulta pública?"
+      }
+    ]
+  },
+  {
+    "id": "GDI257",
+    "text": "Con respecto a los usuarios de los datos abiertos estratégicos de la entidad, indique:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Número total de usuarios de los datos abiertos de la entidad contactados durante 2026:"
+      },
+      {
+        "neg": 0,
+        "label": "Número total de usuarios contactados y satisfechos con el uso de los datos abiertos de la entidad durante 2026:"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no mide la satisfacción de los usuarios con el uso de los datos abiertos"
+      }
+    ]
+  },
+  {
+    "id": "GDI258",
+    "text": "Con respecto a las iniciativas dinamizadoras de la Política de Gobierno Digital, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Ejecutó Proyectos de Transformación Digital durante la vigencia 2026"
+      },
+      {
+        "neg": 0,
+        "label": "Desarrollo el Modelo de Medición de Madurez de Ciudades y Territorios Inteligentes o formuló y/o ejecutó Estrategias de Ciudades y Territorios Inteligentes durante la vigencia 2026 acorde a lo establecido en la resolución No. 1117 de 2022 de MINTIC"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI260",
+    "text": "Con respecto a los Proyectos de Transformación Digital formulados o ejecutados por la entidad durante la vigencia 2026:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Fueron aprobados por el Comité de Gestión y Desempeño Institucional, y se incluyeron en el PETI"
+      },
+      {
+        "neg": 0,
+        "label": "Fueron aprobados por el Comité de Gestión y Desempeño Institucional, pero no se incluyeron en el PETI"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI261",
+    "text": "Los proyectos de Transformación Digital formulados o ejecutados por la entidad durante el 2025 buscaron generar beneficios en términos de:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "La habilitación o mejora en la provisión de trámites y servicios digitales a los ciudadanos (nuevos servicios, más cobertura, mayor inclusión, menores tiempos, menores costos, etc.)"
+      },
+      {
+        "neg": 0,
+        "label": "La habilitación o mejora de procesos internos de la entidad (más eficientes, menos costos, más seguros, etc.)"
+      },
+      {
+        "neg": 0,
+        "label": "La toma de decisiones basada en datos a partir del aumento en el uso y aprovechamiento de la información"
+      },
+      {
+        "neg": 0,
+        "label": "El impulso al desarrollo de territorios y ciudades inteligentes para la solución de retos y problemáticas sociales"
+      },
+      {
+        "neg": 0,
+        "label": "El empoderamiento a los ciudadanos como Estado Abierto habilitando el acceso a información pública generada por la entidad y procesos de participación ciudadana"
+      },
+      {
+        "neg": 0,
+        "label": "Otros. ¿Cuáles?:"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguno de los anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI262",
+    "text": "¿Cuáles de los siguientes lineamientos establecidos en el Decreto 1263 de 2022 se cumplieron en los proyectos de Transformación Digital formulados o ejecutados por la entidad durante el 2025?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Uso de infraestructura de datos dando cumplimiento al Plan Nacional de Infraestructura de Datos, la línea de acción de decisiones basadas en datos y el habilitador de seguridad y privacidad de la información"
+      },
+      {
+        "neg": 0,
+        "label": "Interoperabilidad entre los sistemas de información públicos para suministro e intercambio de la información conforme a los principios señalados en la Ley 1581 de 2012"
+      },
+      {
+        "neg": 0,
+        "label": "Uso de mecanismos de digitalización y automatización de trámites, servicios y procesos y su vinculación al Portal Único del Estado Colombiano"
+      },
+      {
+        "neg": 0,
+        "label": "Uso de mecanismos de agregación de demanda, como acuerdos marco de precios vigentes u otros mecanismos que hayan sido establecidos por la Agencia Nacional de Contratación Pública o la modalidad de contratación contenida en el marco de la Política de compras y contratación pública"
+      },
+      {
+        "neg": 0,
+        "label": "Implementación, migración y uso de servicios de nube, en armonía con el principio de neutralidad tecnológica y normatividad vigente"
+      },
+      {
+        "neg": 0,
+        "label": "Uso de mecanismos exploratorios de regulación como Sandbox"
+      },
+      {
+        "neg": 0,
+        "label": "Uso de tecnologías emergentes tales como inteligencia artificial, internet de las cosas (IoT), big data o blockchain"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguno de los anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI263",
+    "text": "Indique las características que cumplió la Estrategia de Ciudades y Territorios Inteligentes formulada o ejecutada por la entidad durante la vigencia 2026:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Accesible. La estrategia fue formulada, diseñada e implementada en entornos tecnológicos intuitivos e incluyentes que facilitan el acceso de cualquier persona, sin importar sus condiciones físicas"
+      },
+      {
+        "neg": 0,
+        "label": "Se apoyó en el uso de TI. La estrategia incorpora el uso de tecnologías de la información para solucionar problemáticas o necesidades del territorio"
+      },
+      {
+        "neg": 0,
+        "label": "Fortalece capacidades. Se capacita a los usuarios en el uso de las soluciones habilitadas por la estrategia"
+      },
+      {
+        "neg": 0,
+        "label": "Aumenta la confianza en la gestión pública. La estrategia se construye de forma colaborativa con los Grupos de Interés (ciudadanía, sector privado, sector público, sociedad civil, academia) de la ciudad o territorio"
+      },
+      {
+        "neg": 0,
+        "label": "Interopera con otras soluciones tecnológicas. Las soluciones tecnológicas de la estrategia funcionan de forma integrada con otras soluciones tecnológicas del territorio"
+      },
+      {
+        "neg": 0,
+        "label": "Tiene como objetivo principal mejorar la calidad de vida de la ciudadanía. Se identifica de forma clara las dimensiones / subdimensiones del modelo de madurez de Ciudades y Territorios Inteligentes, que se impactan con la estrategia"
+      },
+      {
+        "neg": 0,
+        "label": "Genera datos (información) que mejoran la toma de decisiones de los actores de la ciudad o territorio"
+      },
+      {
+        "neg": 0,
+        "label": "Es sostenible. La entidad territorial tiene previstos los recursos para garantizar el funcionamiento continuo de la estrategia"
+      },
+      {
+        "neg": 0,
+        "label": "Es eficiente en el uso de los recursos económicos. La entidad adquirió bienes y servicios relacionados con la estrategia mediante los Acuerdos Marco de Precio disponibles en la Tienda Virtual del Estado Colombiano (cuando aplique)"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDI264",
+    "text": "¿Qué dimensiones del Modelo de Madurez de Ciudades y Territorios Inteligentes abordaron las estrategias que formuló o ejecutó la entidad durante la vigencia 2026?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Medio ambiente"
+      },
+      {
+        "neg": 0,
+        "label": "Hábitat"
+      },
+      {
+        "neg": 0,
+        "label": "Personas"
+      },
+      {
+        "neg": 0,
+        "label": "Calidad de vida"
+      },
+      {
+        "neg": 0,
+        "label": "Desarrollo económico"
+      },
+      {
+        "neg": 0,
+        "label": "Gobernanza"
+      },
+      {
+        "neg": 1,
+        "label": "No utilizó el Modelo de Ciudades y Territorios Inteligentes para desarrollar su Estrategia de Ciudades y Territorios Inteligentes"
+      }
+    ]
+  },
+  {
+    "id": "GDI267",
+    "text": "En el proceso de formulación de estrategias de ciudades y territorios inteligentes, ¿la entidad incluyó indicadores para medir el uso de las soluciones generadas?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Si. Ingrese las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  }
+];
+
+function buildUI(){
+  const main=document.getElementById('mainContent');
+  main.innerHTML='';
+  questions.forEach(q=>{
+    const card=document.createElement('div');
+    card.className='card';
+    card.innerHTML=`
+      <div class="card-score-bar"><div class="card-score-fill" id="bar_${q.id}"></div></div>
+      <div class="card-header">
+        <span class="card-code">${q.id}</span>
+        <span class="card-question">${q.text}<span class="tipo-badge">${q.tipo}</span></span>
+      </div>
+      <div class="card-body" id="body_${q.id}"></div>
+    `;
+    const body=card.querySelector(`#body_${q.id}`);
+    q.options.forEach((opt,idx)=>{
+      const row=document.createElement('div');
+      row.className='option-row'+(opt.neg?' is-negative':'');
+      const cbId=`cb_${q.id}_${idx}`;
+      row.innerHTML=`
+        <div class="cb-wrap">
+          <input type="checkbox" id="${cbId}" data-q="${q.id}" data-neg="${opt.neg}" value="${opt.neg?0:POINTS_PER}">
+          <label class="cb-box" for="${cbId}"></label>
+        </div>
+        <div class="option-content">
+          <label class="option-label" for="${cbId}">
+            <span class="option-label-text ${opt.neg?'neg-label-text':''}">${opt.label}</span>
+            ${opt.neg===0?`<span class="status-badge status-bad" id="badge_${cbId}" style="display:none">Priorizar</span>`:''}
+          </label>
+          <input type="text" class="soporte-input" placeholder="Soporte / link / texto">
+        </div>
+      `;
+      body.appendChild(row);
+    });
+    main.appendChild(card);
+  });
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',actualizar));
+  actualizar();
+}
+
+function actualizar(){
+  calcular();actualizarEstados();actualizarProgress();
+}
+
+function calcular(){
+  let total=0;
+  const groups={};
+  document.querySelectorAll('input[type=checkbox]').forEach(ch=>{
+    const q=ch.dataset.q;
+    if(!groups[q])groups[q]=[];
+    groups[q].push(ch);
+  });
+  for(const q in groups){
+    const neg=groups[q].some(ch=>ch.checked&&ch.dataset.neg==='1');
+    if(neg)continue;
+    groups[q].forEach(ch=>{if(ch.checked)total+=parseFloat(ch.value);});
+  }
+  const fmt=total.toFixed(2);
+  document.getElementById('total').textContent=fmt;
+  document.getElementById('total2').textContent=fmt;
+  questions.forEach(q=>{
+    const g=groups[q.id]||[];
+    const neg=g.some(ch=>ch.checked&&ch.dataset.neg==='1');
+    let pts=0;
+    if(!neg)g.forEach(ch=>{if(ch.checked)pts+=parseFloat(ch.value);});
+    const max=q.options.filter(o=>o.neg===0).length*POINTS_PER;
+    const bar=document.getElementById(`bar_${q.id}`);
+    if(bar)bar.style.width=max>0?Math.min(100,(pts/max)*100)+'%':'0%';
+  });
+}
+
+function actualizarEstados(){
+  const touchedGroups={};
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    if(cb.checked)touchedGroups[cb.dataset.q]=true;
+  });
+  let checked=0,pending=0;
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    if(cb.dataset.neg==='1')return;
+    const badge=document.getElementById('badge_'+cb.id);
+    if(!badge)return;
+    const touched=touchedGroups[cb.dataset.q]||false;
+    if(cb.checked){
+      badge.textContent='Mantener y mejorar';
+      badge.className='status-badge status-ok';
+      badge.style.display='';
+      checked++;
+    } else if(touched){
+      badge.textContent='Priorizar';
+      badge.className='status-badge status-bad';
+      badge.style.display='';
+      pending++;
+    } else {
+      badge.style.display='none';
+    }
+  });
+  document.getElementById('checkedCount').textContent=checked;
+  document.getElementById('pendingCount').textContent=pending;
+}
+
+function actualizarProgress(){
+  const all=document.querySelectorAll('input[type=checkbox]');
+  let done=0;all.forEach(cb=>{if(cb.checked)done++;});
+  const pct=all.length>0?(done/all.length)*100:0;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressLabel').textContent=`${done} / ${all.length} opciones`;
+}
+
+function limpiar(){
+  document.querySelectorAll('input').forEach(i=>{
+    if(i.type==='checkbox')i.checked=false;
+    if(i.type==='text')i.value='';
+  });
+  actualizar();
+}
+
+function guardar() {
+  // Validar identificación
+  const nombre = (document.getElementById('ident_nombre')?.value || '').trim();
+  const dependencia = (document.getElementById('ident_dependencia')?.value || '').trim();
+  const vigencia = (document.getElementById('ident_vigencia')?.value || '').trim();
+  if (!nombre || !dependencia || !vigencia) {
+    const al = document.getElementById('identAlert');
+    if (al) { al.style.display = 'block'; setTimeout(()=>{ al.style.display='none'; }, 3500); }
+    return;
+  }
+
+  // Recoger respuestas
+  const data = [];
+  questions.forEach(q => {
+    const body = document.getElementById(`body_${q.id}`);
+    if (!body) return;
+    body.querySelectorAll('.option-row').forEach((row, idx) => {
+      const cb = row.querySelector('input[type=checkbox]');
+      const txt = row.querySelector('input[type=text]');
+      const badge = row.querySelector('.status-badge');
+      data.push({
+        pregunta: q.text,
+        codigo: q.id,
+        opcion: q.options[idx]?.label || '',
+        seleccionado: cb ? cb.checked : false,
+        soporte: txt ? txt.value : '',
+        estado: badge ? badge.textContent : ''
+      });
+    });
+  });
+
+  const puntaje = parseFloat(document.getElementById('total')?.textContent || '0');
+  const seleccionadas = parseInt(document.getElementById('checkedCount')?.textContent || '0');
+  const priorizar = parseInt(document.getElementById('pendingCount')?.textContent || '0');
+
+  const output = {
+    fecha_envio: new Date().toISOString(),
+    nombre_funcionario: nombre,
+    dependencia: dependencia,
+    vigencia: vigencia,
+    puntaje_total: puntaje,
+    total_seleccionadas: seleccionadas,
+    a_priorizar: priorizar,
+    respuestas: data
+  };
+
+  // 1. Enviar a Google Sheets via Apps Script
+  const SCRIPT_URL = 'REEMPLAZAR_CON_URL_DE_APPS_SCRIPT';
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(output)
+  }).then(() => {
+    const ok = document.getElementById('identSuccess');
+    if (ok) { ok.style.display = 'block'; setTimeout(()=>{ ok.style.display='none'; }, 4000); }
+  }).catch((err) => {
+    console.error('Error enviando a Sheets:', err);
+  });
+
+  // 2. Descargar JSON de respaldo
+
+  const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download='autodiagnostico_GDI.json';
+  a.click();
+}
+
+buildUI();
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'plan') renderPlan();
+}
+
+function getPlanItems() {
+  const rows = [];
+  questions.forEach(q => {
+    const body = document.getElementById('body_' + q.id);
+    if (!body) return;
+    const groupTouched = document.querySelector('input[data-q="' + q.id + '"]:checked');
+    if (!groupTouched) return;
+    body.querySelectorAll('.option-row').forEach((row, idx) => {
+      const cb = row.querySelector('input[type=checkbox]');
+      if (!cb || cb.dataset.neg === '1' || cb.checked) return;
+      rows.push({ qid: q.id, label: q.options[idx]?.label || '' });
+    });
+  });
+  return rows;
+}
+
+function updatePlanBadge() {
+  const badge = document.getElementById('planBadge');
+  if (!badge) return;
+  const n = getPlanItems().length;
+  badge.textContent = n;
+  badge.className = 'tab-badge' + (n === 0 ? ' zero' : '');
+}
+
+function renderPlan() {
+  updatePlanBadge();
+  const rows = getPlanItems();
+  const cont = document.getElementById('planContent');
+  if (!cont) return;
+  if (rows.length === 0) {
+    cont.innerHTML = '<div class="plan-empty"><div class="icon">✅</div>Sin ítems a priorizar todavía.<br>Complete el autodiagnóstico primero.</div>';
+    return;
+  }
+  let html = '<div class="plan-table-wrap"><table class="plan-table"><thead><tr><th>#</th><th>Código</th><th>Tema a Priorizar</th><th>Tarea a Realizar</th><th>Fecha Inicio</th><th>Fecha Final</th><th>Entregable</th><th>Responsable</th></tr></thead><tbody>';
+  rows.forEach((r, i) => {
+    const lbl = r.label.length > 90 ? r.label.substring(0, 90) + '…' : r.label;
+    html += `<tr><td style="text-align:center;color:var(--text-soft);font-weight:600">${i+1}</td><td><span class="code-pill">${r.qid}</span></td><td class="topic-cell">${lbl}</td><td><input type="text" id="pt_${i}_tarea" placeholder="Describir la tarea…"></td><td><input type="date" id="pt_${i}_inicio"></td><td><input type="date" id="pt_${i}_fin"></td><td><input type="text" id="pt_${i}_entregable" placeholder="Documento, informe…"></td><td><input type="text" id="pt_${i}_resp" placeholder="Nombre o cargo"></td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+
+function exportarPlan() {
+  const cont = document.getElementById('planContent');
+  if (!cont) return;
+  const filas = cont.querySelectorAll('tbody tr');
+  if (!filas.length) { alert('No hay ítems en el plan de trabajo.'); return; }
+  const plan = [];
+  filas.forEach((tr, i) => {
+    const tds = tr.querySelectorAll('td');
+    plan.push({ numero: i+1, codigo: tds[1]?.querySelector('.code-pill')?.textContent||'', tema: tds[2]?.textContent?.trim()||'', tarea: document.getElementById('pt_'+i+'_tarea')?.value||'', fecha_inicio: document.getElementById('pt_'+i+'_inicio')?.value||'', fecha_fin: document.getElementById('pt_'+i+'_fin')?.value||'', entregable: document.getElementById('pt_'+i+'_entregable')?.value||'', responsable: document.getElementById('pt_'+i+'_resp')?.value||'' });
+  });
+  const blob = new Blob([JSON.stringify({plan_de_trabajo: plan}, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan_de_trabajo.json'; a.click();
+}
+
+const _orig = actualizarFormulario;
+actualizarFormulario = function() { _orig(); updatePlanBadge(); };
+
+</script>
+</body>
+</html>
