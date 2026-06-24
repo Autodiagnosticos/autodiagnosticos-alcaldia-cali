@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Autodiagnóstico GDO — Gestión Documental</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+:root{
+  --navy:#0B2B5C;--navy-mid:#153D7A;--navy-light:#1E5299;
+  --gold:#C8A951;--gold-light:#F0D98A;
+  --surface:#F5F7FB;--card:#FFFFFF;--border:#DDE3EE;
+  --text:#1A2340;--text-soft:#5A6480;
+  --ok-bg:#E6F4EC;--ok-text:#1A6B3C;--ok-border:#7EC8A0;
+  --bad-bg:#FDF0EF;--bad-text:#B03020;--bad-border:#F4A89A;
+  --neg-bg:#F7F8FA;--neg-text:#8A94A6;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--surface);color:var(--text);line-height:1.5;}
+.header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);color:#fff;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(11,43,92,.3);}
+.header-inner{max-width:860px;margin:0 auto;padding:20px 24px 16px;display:flex;align-items:flex-start;gap:20px;}
+.header-icon{width:48px;height:48px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px;}
+.header-text{flex:1;}
+.header-text .eyebrow{font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--gold-light);text-transform:uppercase;margin-bottom:4px;}
+.header-text h1{font-size:17px;font-weight:700;line-height:1.3;color:#fff;}
+.header-text .subtitle{font-size:12px;color:rgba(255,255,255,.65);margin-top:3px;}
+.score-pill{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.22);border-radius:50px;padding:8px 16px;text-align:center;min-width:90px;flex-shrink:0;}
+.score-pill .score-val{font-size:22px;font-weight:700;color:var(--gold-light);line-height:1;}
+.score-pill .score-label{font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+.progress-bar-wrap{max-width:860px;margin:0 auto;padding:0 24px 12px;display:flex;align-items:center;gap:10px;}
+.progress-bar-track{flex:1;height:5px;background:rgba(255,255,255,.18);border-radius:99px;overflow:hidden;}
+.progress-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--gold-light),var(--gold));border-radius:99px;transition:width .4s ease;}
+.progress-label{font-size:10px;color:rgba(255,255,255,.55);white-space:nowrap;letter-spacing:.05em;}
+.main{max-width:860px;margin:0 auto;padding:28px 24px 60px;}
+.tipo-badge{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:99px;margin-left:8px;background:rgba(200,169,81,.18);color:var(--gold);border:1px solid rgba(200,169,81,.35);vertical-align:middle;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:18px;overflow:hidden;box-shadow:0 1px 4px rgba(11,43,92,.06);transition:box-shadow .2s;}
+.card:hover{box-shadow:0 4px 18px rgba(11,43,92,.1);}
+.card-score-bar{height:3px;background:var(--border);}
+.card-score-fill{height:100%;width:0%;background:var(--gold);transition:width .4s ease;}
+.card-header{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border);background:#FAFBFD;}
+.card-code{background:var(--navy);color:var(--gold-light);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:6px;white-space:nowrap;margin-top:1px;flex-shrink:0;}
+.card-question{font-size:13.5px;font-weight:600;color:var(--text);line-height:1.45;flex:1;}
+.card-body{padding:10px 0;}
+.option-row{display:flex;align-items:flex-start;padding:10px 20px;border-bottom:1px solid #F0F2F7;transition:background .15s;}
+.option-row:last-child{border-bottom:none;}
+.option-row:hover{background:#F5F7FB;}
+.option-row.is-negative{background:var(--neg-bg);}
+.option-row.is-negative:hover{background:#EEF0F5;}
+.cb-wrap{flex-shrink:0;margin-top:1px;}
+.cb-wrap input[type=checkbox]{display:none;}
+.cb-box{width:18px;height:18px;border:2px solid var(--border);border-radius:5px;background:#fff;display:flex;align-items:center;justify-content:center;transition:all .15s;cursor:pointer;flex-shrink:0;}
+.cb-wrap input:checked+.cb-box{background:var(--navy);border-color:var(--navy);}
+.cb-wrap input:checked+.cb-box::after{content:'';width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px);display:block;}
+.is-negative .cb-wrap input:checked+.cb-box{background:var(--neg-text);border-color:var(--neg-text);}
+.option-content{flex:1;display:flex;flex-direction:column;gap:6px;padding-left:12px;}
+.option-label{font-size:13px;color:var(--text);line-height:1.45;cursor:pointer;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.option-label-text{flex:1;}
+.status-badge{font-size:10px;font-weight:600;letter-spacing:.06em;padding:2px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0;text-transform:uppercase;}
+.status-ok{background:var(--ok-bg);color:var(--ok-text);border:1px solid var(--ok-border);}
+.status-bad{background:var(--bad-bg);color:var(--bad-text);border:1px solid var(--bad-border);}
+.soporte-input{width:100%;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-family:inherit;font-size:12px;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s;}
+.soporte-input::placeholder{color:#AEBACF;}
+.soporte-input:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(30,82,153,.12);background:#fff;}
+.is-negative .soporte-input{background:var(--neg-bg);}
+.neg-label-text{color:var(--neg-text);font-style:italic;}
+.actions{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border:none;border-radius:9px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;}
+.btn-primary{background:var(--navy);color:#fff;box-shadow:0 2px 8px rgba(11,43,92,.3);}
+.btn-primary:hover{background:var(--navy-light);transform:translateY(-1px);}
+.btn-secondary{background:#fff;color:var(--text-soft);border:1.5px solid var(--border);}
+.btn-secondary:hover{background:var(--surface);border-color:#B0BAD0;}
+.btn svg{width:15px;height:15px;}
+.summary-bar{position:fixed;bottom:0;left:0;right:0;background:var(--navy);border-top:2px solid var(--gold);padding:10px 24px;display:flex;align-items:center;justify-content:center;gap:32px;z-index:90;box-shadow:0 -4px 20px rgba(11,43,92,.25);}
+.stat-item{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.8);font-size:12px;}
+.stat-val{font-size:16px;font-weight:700;color:var(--gold-light);}
+.stat-divider{width:1px;height:30px;background:rgba(255,255,255,.15);}
+
+  /* ── CONSULTOR en progress-bar ── */
+  .progress-bar-wrap {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .consultant-info {
+    margin-left: auto;
+    text-align: right;
+    line-height: 1.35;
+    flex-shrink: 0;
+  }
+  .consultant-info .ci-name  { font-size: 11px; font-weight: 700; color: var(--gold-light); display: block; white-space: nowrap; }
+  .consultant-info .ci-role  { font-size: 10px; color: rgba(255,255,255,0.75); display: block; }
+  .consultant-info .ci-contact { font-size: 9.5px; color: rgba(255,255,255,0.55); display: block; }
+
+  /* ── TABS ── */
+  .tab-nav {
+    max-width: 860px; margin: 0 auto;
+    padding: 14px 24px 0;
+    display: flex; gap: 6px;
+    background: var(--surface);
+  }
+  .tab-btn {
+    padding: 9px 20px;
+    border: 1.5px solid var(--border); border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    background: #E8ECF5; color: var(--text-soft);
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .tab-btn.active { background: var(--card); color: var(--navy); border-color: var(--border); box-shadow: 0 -2px 8px rgba(11,43,92,0.07); }
+  .tab-btn:hover:not(.active) { background: #D8DDED; }
+  .tab-badge { background: var(--bad-bg); color: var(--bad-text); border: 1px solid var(--bad-border); font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 99px; }
+  .tab-badge.zero { background: #eee; color: #aaa; border-color: #ddd; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── PLAN DE TRABAJO ── */
+  .plan-wrap { max-width: 860px; margin: 0 auto; padding: 28px 24px 80px; }
+  .plan-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .plan-title { font-size: 16px; font-weight: 700; color: var(--navy); }
+  .plan-subtitle { font-size: 12px; color: var(--text-soft); margin-top: 2px; }
+  .plan-empty { text-align: center; padding: 60px 20px; color: var(--text-soft); font-size: 13px; }
+  .plan-empty .icon { font-size: 40px; margin-bottom: 12px; }
+  .plan-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  .plan-table { width: 100%; border-collapse: collapse; font-size: 12px; background: var(--card); }
+  .plan-table th { background: var(--navy); color: #fff; padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; white-space: nowrap; }
+  .plan-table th:first-child { border-radius: 12px 0 0 0; }
+  .plan-table th:last-child  { border-radius: 0 12px 0 0; }
+  .plan-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .plan-table tr:last-child td { border-bottom: none; }
+  .plan-table tr:nth-child(even) td { background: var(--surface); }
+  .plan-table .topic-cell { font-weight: 500; color: var(--navy); max-width: 220px; }
+  .plan-table .code-pill { font-size: 10px; font-weight: 700; background: var(--navy); color: #fff; padding: 2px 7px; border-radius: 99px; display: inline-block; margin-bottom: 4px; }
+  .plan-table input[type=text], .plan-table input[type=date] { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-family: inherit; font-size: 11px; color: var(--text); background: #fff; outline: none; }
+  .plan-table input:focus { border-color: var(--focus); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+  .btn-export-plan { background: var(--gold); color: var(--navy); border: none; border-radius: 8px; padding: 9px 18px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .btn-export-plan:hover { background: var(--gold-light); }
+
+
+  /* ── BANNER IDENTIFICACIÓN ── */
+  .ident-banner {
+    background: linear-gradient(135deg, #0B2B5C 0%, #153D7A 100%);
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    box-shadow: 0 3px 20px rgba(11,43,92,0.35);
+  }
+  .ident-inner {
+    max-width: 860px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+  }
+  .ident-field {
+    display: flex; flex-direction: column; flex: 1; min-width: 160px;
+  }
+  .ident-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.55); text-transform: uppercase; margin-bottom: 4px;
+  }
+  .ident-input {
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 7px;
+    padding: 7px 11px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 12px; color: #fff;
+    outline: none; width: 100%;
+  }
+  .ident-input::placeholder { color: rgba(255,255,255,0.35); }
+  .ident-input:focus { border-color: #C8A951; background: rgba(255,255,255,0.15); }
+  .ident-required { color: #F0D98A; }
+  .ident-alert {
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #B03020; color: #fff; border-radius: 10px;
+    padding: 12px 24px; font-size: 13px; font-weight: 600;
+    z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s;
+  }
+  .ident-success {
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #1A6B3C; color: #fff; border-radius: 10px;
+    padding: 12px 24px; font-size: 13px; font-weight: 600;
+    z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s;
+  }
+  @keyframes fadeIn { from { opacity:0; top:10px; } to { opacity:1; top:20px; } }
+
+</style>
+</head>
+<body>
+
+<!-- BANNER IDENTIFICACIÓN -->
+<div class="ident-banner">
+  <div class="ident-inner">
+    <div class="ident-field">
+      <span class="ident-label">Nombre completo <span class="ident-required">*</span></span>
+      <input class="ident-input" type="text" id="ident_nombre" placeholder="Funcionario que diligencia…">
+    </div>
+    <div class="ident-field">
+      <span class="ident-label">Dependencia / Área <span class="ident-required">*</span></span>
+      <input class="ident-input" type="text" id="ident_dependencia" placeholder="Secretaría, Despacho, Área…">
+    </div>
+    <div class="ident-field" style="max-width:120px;min-width:100px">
+      <span class="ident-label">Vigencia <span class="ident-required">*</span></span>
+      <input class="ident-input" type="number" id="ident_vigencia" placeholder="2024" min="2020" max="2030">
+    </div>
+  </div>
+</div>
+<div class="ident-alert" id="identAlert">⚠️ Complete Nombre, Dependencia y Vigencia antes de guardar.</div>
+<div class="ident-success" id="identSuccess">✅ Respuestas enviadas correctamente a Google Sheets.</div>
+<!-- FIN BANNER -->
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-icon">🗂️</div>
+    <div class="header-text">
+      <div class="eyebrow">Función Pública · Índice GDO · Gestión Documental y Administración de Archivos</div>
+      <h1>Autodiagnóstico de Gestión Documental y Administración de Archivos</h1>
+      <div class="subtitle">Marque las opciones que aplican y registre el soporte correspondiente</div>
+    </div>
+    <div class="score-pill">
+      <div class="score-val" id="total">0</div>
+      <div class="score-label">Puntos</div>
+    </div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">0 / 0 opciones</div>
+      <div class="consultant-info">
+        <span class="ci-name">Ilder Luis Palta Velasco</span>
+        <span class="ci-role">Consultor Organizacional</span>
+        <span class="ci-contact">📱 317 297 1922 · ✉️ luispalta@gmail.com</span>
+      </div>
+  </div>
+</div>
+<div class="tab-nav">
+  <button class="tab-btn active" id="tab-diag" onclick="switchTab('diag')">📋 Autodiagnóstico</button>
+  <button class="tab-btn" id="tab-plan" onclick="switchTab('plan')">🗂️ Plan de Trabajo <span class="tab-badge zero" id="planBadge">0</span></button>
+</div>
+<div class="tab-panel active" id="panel-diag">
+<div class="main" id="mainContent"></div>
+</div><!-- cierre panel-diag -->
+
+<div class="tab-panel" id="panel-plan">
+  <div class="plan-wrap">
+    <div class="plan-header-row">
+      <div>
+        <div class="plan-title">🗂️ Plan de Trabajo</div>
+        <div class="plan-subtitle">Opciones marcadas como <strong>Priorizar</strong> — complete fechas, entregable y responsable</div>
+      </div>
+      <button class="btn-export-plan" onclick="exportarPlan()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar Plan (JSON)
+      </button>
+    </div>
+    <div id="planContent">
+      <div class="plan-empty"><div class="icon">✅</div>Sin ítems a priorizar.<br>Complete el autodiagnóstico primero.</div>
+    </div>
+  </div>
+</div>
+
+<div class="main" style="padding-top:0">
+  <div class="actions">
+    <button class="btn btn-primary" onclick="guardar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Guardar resultado
+    </button>
+    <button class="btn btn-secondary" onclick="limpiar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
+      Limpiar todo
+    </button>
+  </div>
+</div>
+<div class="summary-bar">
+  <div class="stat-item"><span>Puntaje total:</span><span class="stat-val" id="total2">0</span><span>pts</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat-item"><span>Seleccionadas:</span><span class="stat-val" id="checkedCount">0</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat-item"><span>A priorizar:</span><span class="stat-val" id="pendingCount">0</span></div>
+</div>
+<script>
+const POINTS_PER = 0.8474576271;
+const questions = [
+  {
+    "id": "GDO200",
+    "text": "Frente al diagnóstico integral de la Gestión Documental y Administración de Archivos la entidad:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Elaboró, actualizó o realizó acciones conforme al diagnóstico integral de la gestión documental y administración de archivos durante la vigencia evaluada y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No cuenta con el diagnóstico integral de la Gestión Documental y Administración de Archivos"
+      }
+    ]
+  },
+  {
+    "id": "GDO201",
+    "text": "El diagnóstico integral de la Gestión Documental y Administración de Archivos ha servido para:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Formular o actualizar la política institucional de gestión documental"
+      },
+      {
+        "neg": 0,
+        "label": "Formular o actualizar el Plan Institucional de Archivos - PINAR"
+      },
+      {
+        "neg": 0,
+        "label": "Formular o actualizar el Programa de Gestión Documental -PGD"
+      },
+      {
+        "neg": 0,
+        "label": "Formular o actualizar los planes del Sistema Integrado de Conservación Documental - SIC"
+      },
+      {
+        "neg": 0,
+        "label": "La mejora de procesos y procedimientos de la gestión documental de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "La identificación, medición y control de los riesgos asociados a la gestión documental"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDO202",
+    "text": "Frente al proceso de planeación de la función archivística, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Se encuentra elaborando o ya cuenta con el instrumento Plan Institucional de Archivos - PINAR"
+      },
+      {
+        "neg": 0,
+        "label": "Ejecutó, durante la vigencia evaluada, las acciones definidas en el PINAR, y se cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Realizó seguimiento y control al PINAR con indicadores o herramientas de medición, o a través de las actividades de seguimiento de la oficina de control interno, y se cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Tomó decisiones desde la alta dirección e instancias competentes (Comité de archivo o Comité Institucional de Gestión y Desempeño) a partir de los resultados del seguimiento y control al PINAR y se adelantaron acciones de mejora continua que garantizaron el cumplimiento de los planes y proyectos del PINAR y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No cuenta con Plan Institucional de Archivos - PINAR"
+      }
+    ]
+  },
+  {
+    "id": "GDO203",
+    "text": "¿Durante la vigencia evaluada, se garantizó la implementación del Programa de Gestión Documental -PGD?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "La entidad se encuentra elaborando o cuenta con el PGD"
+      },
+      {
+        "neg": 0,
+        "label": "Si, a través de la aprobación, publicación y ejecución del PGD o los programas específicos. Especificar qué programas específicos del PGD ejecutó:"
+      },
+      {
+        "neg": 0,
+        "label": "Sí, a través del seguimiento y control al PGD, con indicadores o herramientas de medición, o a través de las actividades de seguimiento de la oficina de control interno, y se cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Si, a través de las decisiones adoptadas por el Comité Institucional de Gestión y Desempeño o Comité de Archivo, y se adelantaron acciones de mejora continua que garantizaron los recursos necesarios para su implementación, y cuenta con evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No se cuenta con el Programa de Gestión Documental -PGD"
+      }
+    ]
+  },
+  {
+    "id": "GDO204",
+    "text": "Respecto de la Política Institucional de Gestión Documental la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "La formuló de acuerdo con los lineamientos establecidos por el Archivo General de la Nación"
+      },
+      {
+        "neg": 0,
+        "label": "La aprobó, socializó, publicó y divulgó al interior de la entidad y cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Realizó seguimiento y control con indicadores o herramientas de medición, o a través de las actividades de seguimiento de la oficina de control interno, y se cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Tomó decisiones desde la alta dirección e instancias competentes (Comité de archivo o Comité Institucional de Gestión y Desempeño) a partir de los resultados del seguimiento y control y se adelantaron acciones de mejora continua que garantizaron el cumplimiento de la política y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No cuenta con Política de Gestión Documental"
+      }
+    ]
+  },
+  {
+    "id": "GDO205",
+    "text": "Dentro de la planeación estratégica, la entidad ejecutó presupuesto, de funcionamiento o inversión, durante la vigencia evaluada para: (Especifique el monto en pesos)",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Elaboración o actualización del Plan Institucional de Archivos - PINAR:"
+      },
+      {
+        "neg": 0,
+        "label": "Elaboración o actualización del Programa de Gestión Documental PGD:"
+      },
+      {
+        "neg": 0,
+        "label": "Elaboración o actualización de los planes del Sistema Integrado de Conservación - SIC:"
+      },
+      {
+        "neg": 0,
+        "label": "Elaboración o actualización del Banco Terminológico:"
+      },
+      {
+        "neg": 0,
+        "label": "Elaboración o actualización del Modelo de Requisitos de Documentos Electrónicos de Archivo:"
+      },
+      {
+        "neg": 0,
+        "label": "Elaboración o actualización de las Tablas de Retención Documental - TRD:"
+      },
+      {
+        "neg": 0,
+        "label": "Elaboración o actualización del Cuadro de Clasificación Documental - CCD:"
+      },
+      {
+        "neg": 0,
+        "label": "Elaboración o actualización del mapa de control de procesos y flujos documentales:"
+      },
+      {
+        "neg": 0,
+        "label": "Elaboración o actualización de las Tablas de Control de Acceso:"
+      },
+      {
+        "neg": 0,
+        "label": "Elaboración de los Inventarios Documentales:"
+      },
+      {
+        "neg": 0,
+        "label": "Capacitación del talento humano en los procesos de la gestión documental:"
+      },
+      {
+        "neg": 0,
+        "label": "Elaboración o actualización del diagnóstico integral de gestión documental y administración de archivos:"
+      },
+      {
+        "neg": 0,
+        "label": "Infraestructura física, mobiliario e insumos para la administración de los archivos:"
+      },
+      {
+        "neg": 0,
+        "label": "Infraestructura tecnológica para archivos, repositorios digitales confiables:"
+      },
+      {
+        "neg": 0,
+        "label": "Contratación personal para gestión documental:"
+      },
+      {
+        "neg": 0,
+        "label": "Servicios de mensajería:"
+      },
+      {
+        "neg": 0,
+        "label": "Servicios de custodia:"
+      },
+      {
+        "neg": 1,
+        "label": "No ejecutó presupuesto para ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDO206",
+    "text": "¿La entidad ha vinculado personal de planta en la gestión documental conforme a las competencias específicas contempladas en la Resolución 629 de 2018 de Función Pública?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, se ha vinculado personal de planta con las competencias en Archivos y Gestión Documental"
+      },
+      {
+        "neg": 1,
+        "label": "No tiene personal de planta conforme a las competencias definidas en la resolución. Explique las razones:"
+      }
+    ]
+  },
+  {
+    "id": "GDO209",
+    "text": "Conforme al Plan Institucional de Capacitación, los temas impartidos en materia de gestión documental han servido para:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Implementar al interior de la entidad las buenas prácticas en la aplicación de los procesos de la gestión documental"
+      },
+      {
+        "neg": 0,
+        "label": "Garantizar la conformación de los expedientes y la organización de los archivos en todas las áreas de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Fomentar una mayor conciencia sobre la importancia de la gestión documental en la cultura organizacional. Registre el número de personas capacitadas en temas de gestión documental durante la vigencia:"
+      },
+      {
+        "neg": 0,
+        "label": "Obtener retroalimentación sobre la efectividad de los temas impartidos en gestión documental"
+      },
+      {
+        "neg": 1,
+        "label": "No se han incluido temas de gestión documental en el Plan de Capacitación Institucional"
+      }
+    ]
+  },
+  {
+    "id": "GDO211",
+    "text": "Con respecto a las Tablas de Retención Documental - TRD, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Analizó si cuenta con series y subseries documentales relativas a derechos humanos, memoria histórica y conflicto armado, en el proceso de valoración"
+      },
+      {
+        "neg": 0,
+        "label": "Identificó en las TRD los documentos audiovisuales (video, audio, fotográficos) en cualquier soporte y medio (analógico, electrónico) que hacen parte de las series y subseries documentales"
+      },
+      {
+        "neg": 0,
+        "label": "Identificó en las TRD los tipos documentales en formatos electrónicos, conforme a los flujos y procedimientos para la producción documental de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Las tiene actualizadas, aprobadas y convalidadas conforme a la estructura orgánica vigente de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Las implementó para efectuar las transferencias documentales primarias"
+      },
+      {
+        "neg": 0,
+        "label": "Las implementó para alistar las transferencias documentales secundarias"
+      },
+      {
+        "neg": 0,
+        "label": "Las implementó para efectuar el proceso de eliminación documental, conforme al procedimiento establecido en la normatividad vigente"
+      },
+      {
+        "neg": 0,
+        "label": "Cuenta con las TRD, pero no se aplican"
+      },
+      {
+        "neg": 1,
+        "label": "No tiene TRD. Explique la razón:"
+      }
+    ]
+  },
+  {
+    "id": "GDO213",
+    "text": "La totalidad de las dependencias de la entidad tienen inventariada la documentación de sus archivos de gestión en el Formato Único de Inventario Documental - FUID:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "En menos del 30% de la documentación"
+      },
+      {
+        "neg": 0,
+        "label": "Entre el 30% y 59% de la documentación"
+      },
+      {
+        "neg": 0,
+        "label": "Entre el 60% y 89% de la documentación"
+      },
+      {
+        "neg": 0,
+        "label": "El 90% o más de la documentación"
+      },
+      {
+        "neg": 1,
+        "label": "No tiene inventario de la documentación. Explique las razones:"
+      }
+    ]
+  },
+  {
+    "id": "GDO214",
+    "text": "La entidad tiene inventariada la totalidad de la documentación de su archivo central en el Formato Único de Inventario Documental - FUID:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "En menos del 30%"
+      },
+      {
+        "neg": 0,
+        "label": "Entre el 30% y 59%"
+      },
+      {
+        "neg": 0,
+        "label": "Entre el 60% y 89%"
+      },
+      {
+        "neg": 0,
+        "label": "El 90% o más"
+      },
+      {
+        "neg": 1,
+        "label": "No tiene inventario de la documentación. Explique las razones:"
+      }
+    ]
+  },
+  {
+    "id": "GDO217",
+    "text": "Para la transferencia documental secundaria, ¿elaboró la base de datos con la descripción documental basada en la ISAD-G?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No se efectuó ningún proceso de descripción conforme a la ISAD-G"
+      }
+    ]
+  },
+  {
+    "id": "GDO221",
+    "text": "¿Qué acciones realizó la entidad para organizar el Fondo Documental Acumulado -FDA durante la vigencia evaluada?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Identificó y priorizó acciones de intervención, a partir del diagnóstico"
+      },
+      {
+        "neg": 0,
+        "label": "Ejecutó las actividades previstas en el Plan de Trabajo Archivístico Integral"
+      },
+      {
+        "neg": 0,
+        "label": "Valoró los documentos a partir de la elaboración y aprobación de las Tablas de Valoración Documental"
+      },
+      {
+        "neg": 0,
+        "label": "Se encuentran en proceso de convalidación de las Tablas de Valoración Documental"
+      },
+      {
+        "neg": 0,
+        "label": "Implementó las Tablas de Valoración Documental una vez convalidadas, para efectuar las transferencias documentales secundarias y cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Implementó las Tablas de Valoración Documental una vez convalidadas, para efectuar el proceso de eliminación documental y cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Realizó el proceso de eliminación documental sin tener en cuenta los instrumentos archivísticos y criterios técnicos"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna, no se destinaron recursos para la intervención del fondo acumulado"
+      },
+      {
+        "neg": 1,
+        "label": "No tiene Fondos Documentales Acumulados -FDA"
+      }
+    ]
+  },
+  {
+    "id": "GDO223",
+    "text": "¿Durante la vigencia evaluada, se garantizó la implementación del Plan de Conservación Documental, como parte integral del Sistema Integrado de Conservación - SIC?:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Si, a través de la ejecución de las actividades en desarrollo de los Programas de conservación preventiva"
+      },
+      {
+        "neg": 0,
+        "label": "Si, a través del seguimiento de autoevaluación y autocontrol de la entidad o las actividades de seguimiento de la oficina de control interno, y se cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Si, se adoptaron decisiones a través del Comité Institucional de Gestión y Desempeño o Comité de Archivo, que permitieron la implementación de los Programas de conservación preventiva, y se cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Si, a través del seguimiento y control de los riegos asociados a la conservación de los documentos y archivos, en el Programa de Prevención de Emergencias y Atención de Desastres, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No, no se cuenta con el Plan de Conservación Documental"
+      }
+    ]
+  },
+  {
+    "id": "GDO224",
+    "text": "Frente a la conservación documental de los soportes físicos, la entidad durante la vigencia evaluada:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Realizó capacitación y sensibilización en referencia a la conservación documental (Cronograma)"
+      },
+      {
+        "neg": 0,
+        "label": "Realizó mantenimiento a los sistemas de almacenamiento e instalaciones físicas (reparación locativa, limpieza)"
+      },
+      {
+        "neg": 0,
+        "label": "Realizó saneamiento ambiental de áreas de archivo (fumigación, desinfección, desratización, desinsectación)"
+      },
+      {
+        "neg": 0,
+        "label": "Realizó monitoreo y control (con equipos de medición) de las condiciones ambientales"
+      },
+      {
+        "neg": 0,
+        "label": "Realizó almacenamiento y re-almacenamiento en unidades adecuadas (cajas, carpetas, estantería)"
+      },
+      {
+        "neg": 0,
+        "label": "Realizó actividades de prevención de emergencias y atención de desastres en archivos"
+      },
+      {
+        "neg": 1,
+        "label": "No realizó actividades de conservación documental de los soportes físicos"
+      },
+      {
+        "neg": 0,
+        "label": "Detectó que los documentos presentan situación de riesgo ocasionada por fenómenos naturales"
+      },
+      {
+        "neg": 0,
+        "label": "Detectó que los documentos presentan situación de riesgo ocasionada por otras razones. Especifique cuáles:"
+      }
+    ]
+  },
+  {
+    "id": "GDO226",
+    "text": "Frente a la gestión de documentos electrónicos y conformación de expedientes electrónicos:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Identificó los documentos electrónicos que hacen parte del flujo documental en desarrollo de los procesos, procedimientos, trámites y servicios"
+      },
+      {
+        "neg": 0,
+        "label": "Definió esquemas de validación y metadatos, para los documentos electrónicos en los procesos, procedimientos, trámites o servicios automatizados"
+      },
+      {
+        "neg": 0,
+        "label": "Identificó los metadatos para la preservación digital a largo plazo de los documentos de archivo"
+      },
+      {
+        "neg": 0,
+        "label": "Conformó los expedientes electrónicos, con base en los principios y procesos de la gestión documental, y los instrumentos archivísticos (CCD-TRD)"
+      },
+      {
+        "neg": 0,
+        "label": "Elaboró el Modelo de Requisitos para la Gestión de Documentos Electrónicos"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguno de los anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GDO227",
+    "text": "Con relación al Sistema de Gestión de Documentos Electrónicos de Archivo (SGDEA), la entidad:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Parametrizó el SGDEA a partir del Modelo de Requisitos para la Gestión de Documentos Electrónicos"
+      },
+      {
+        "neg": 0,
+        "label": "Se encuentra en proceso de implementación de un SGDEA de acuerdo con el Modelo de Requisitos para la Gestión de Documentos Electrónicos"
+      },
+      {
+        "neg": 0,
+        "label": "Se utilizan repositorios digitales confiables, para el almacenamiento y la preservación a largo plazo de los documentos y expedientes electrónicos"
+      },
+      {
+        "neg": 0,
+        "label": "Generó o tramitó documentos electrónicos, pero carece de un Sistema de Gestión de Documentos electrónicos de archivo - SGDEA"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no generó o tramitó documentos electrónicos"
+      }
+    ]
+  },
+  {
+    "id": "GDO228",
+    "text": "Con relación al proceso de digitalización de documentos de archivo, la entidad:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 1,
+        "label": "No se efectúan procesos de digitalización"
+      },
+      {
+        "neg": 0,
+        "label": "Ejecutó actividades de digitalización sin tener en cuenta lo dispuesto en los instrumentos archivísticos"
+      },
+      {
+        "neg": 0,
+        "label": "Contó con procedimientos básicos como alistamiento, escaneo y control de calidad, documentados para el desarrollo de actividades de digitalización"
+      },
+      {
+        "neg": 0,
+        "label": "Registró en el Programa de Reprografía del Programa de Gestión Documental, los procesos de digitalización conforme a la disposición final de los documentos"
+      }
+    ]
+  },
+  {
+    "id": "GDO230",
+    "text": "¿La entidad realizó acciones para articular la gestión documental con la gestión ambiental, en pro de la reducción de consumo de papel y generación de residuos de archivo?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:Informe de consumo papel y campañas de promoción"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GDO231",
+    "text": "Frente a la documentación de carácter histórico, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Generó acciones para la identificación de documentos de carácter histórico"
+      },
+      {
+        "neg": 0,
+        "label": "Cuenta con documentos en la fase de archivo histórico"
+      },
+      {
+        "neg": 0,
+        "label": "Generó acciones para la conservación y preservación de los documentos de carácter histórico"
+      },
+      {
+        "neg": 0,
+        "label": "Generó acciones para conformar el archivo histórico o efectuar la transferencia documental secundaria"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      },
+      {
+        "neg": 1,
+        "label": "No aplica porque no cuenta con documentación de carácter histórico"
+      }
+    ]
+  },
+  {
+    "id": "GDO232",
+    "text": "¿Cuántas personas de planta ha incorporado conforme a las competencias específicas contempladas en la Resolución 629 de 2018 de Función Pública?",
+    "tipo": "Selección múltiple numérica",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Especificar cuántos profesionales:"
+      },
+      {
+        "neg": 0,
+        "label": "Especificar cuántos tecnólogos:"
+      },
+      {
+        "neg": 0,
+        "label": "Especificar cuantos técnicos:"
+      }
+    ]
+  },
+  {
+    "id": "GDO233",
+    "text": "El inventario documental ha servido para:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Garantizar el control y acceso de los expedientes y se tiene documentado el procedimiento"
+      },
+      {
+        "neg": 0,
+        "label": "La entrega y recibo de los archivos y se tiene documentado el procedimiento"
+      },
+      {
+        "neg": 0,
+        "label": "Efectuar las transferencias documentales y se tiene documentado el procedimiento"
+      },
+      {
+        "neg": 0,
+        "label": "Identificar las unidades documentales objeto de eliminación conforme a las TRD o TVD"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores. Explique las razones"
+      }
+    ]
+  },
+  {
+    "id": "GDO234",
+    "text": "¿La entidad implementó la hoja de control para la descripción de los tipos documentales, desde la fase de gestión?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GDO235",
+    "text": "¿Durante la vigencia evaluada, se garantizó la implementación del Plan de Preservación Digital a Largo Plazo, como parte integral del Sistema Integrado de Conservación - SIC?:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Si, a través de la ejecución de las estrategias de preservación, en desarrollo del Plan de Preservación Digital a Largo Plazo"
+      },
+      {
+        "neg": 0,
+        "label": "Si, a través del seguimiento de autoevaluación y autocontrol de la entidad o las actividades de seguimiento de la oficina de control interno, y se cuenta las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Si, se adoptaron decisiones a través del Comité Institucional de Gestión y Desempeño o Comité de Archivo, que permitieron la implementación del Plan de Preservación Digital a Largo Plazo, y se cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Si, a través del seguimiento y control de los riegos asociados a la preservación digital a largo plazo de los documentos, identificados en el diagnóstico, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No, no se cuenta con el Plan de Preservación Digital a Largo Plazo. Explique las razones:"
+      }
+    ]
+  },
+  {
+    "id": "GDO237",
+    "text": "¿Durante la vigencia evaluada, la entidad generó documentos electrónicos en formatos de preservación digital a largo plazo, independientemente del sistema que utilice?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 1,
+        "label": "No, no se usan formatos electrónicos para la preservación digital a largo plazo de los documentos de archivo"
+      },
+      {
+        "neg": 0,
+        "label": "Si, los documentos electrónicos de archivo tienen en cuenta los formatos de preservación digital a largo plazo"
+      }
+    ]
+  },
+  {
+    "id": "GDO238",
+    "text": "Desde el Comité Institucional de Gestión y Desempeño de la entidad o Comité de Archivo, ¿se adoptaron decisiones para garantizar la articulación de la Política de Archivos y Gestión Documental, con la Política de Seguridad Digital?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias: Decreto de Adopción e Implementación del SIC No. 223 del 2021 y Política de Administracion del Riesgo de la entidad."
+      },
+      {
+        "neg": 1,
+        "label": "No, no se encuentra articulada la política de archivos y gestión documental con la política de Seguridad Digital"
+      }
+    ]
+  },
+  {
+    "id": "GDO239",
+    "text": "¿La entidad cuenta con la infraestructura adecuada (capacidad locativa y tecnológica) para la administración, conservación y preservación de los archivos en sus diferentes fases?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, programó acciones para adecuar o adquirir los recursos físicos y tecnológicos necesarios que garanticen la infraestructura adecuada para la administración de los archivos en sus diferentes fases"
+      },
+      {
+        "neg": 0,
+        "label": "Sí, adquirió o adecuó recursos físicos y tecnológicos necesarios que aseguren la administración de los archivos en sus diferentes fases"
+      },
+      {
+        "neg": 0,
+        "label": "Sí, realizó seguimiento y control de la capacidad locativa y tecnológica de las instalaciones, de acuerdo con indicadores o herramientas de medición y evaluación, o las actividades de seguimiento de control interno"
+      },
+      {
+        "neg": 0,
+        "label": "Sí, tomó decisiones desde la alta dirección e instancias competentes (Comité de archivo o Comité Institucional de Gestión y Desempeño) a partir de los resultados del seguimiento y control y se adelantaron acciones de mejora continua que garantizaron la infraestructura adecuada, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No, dadas las capacidades institucionales"
+      }
+    ]
+  },
+  {
+    "id": "GDO240",
+    "text": "Respecto a las condiciones de trabajo del personal de gestión documental y en articulación con el Plan Anual de Seguridad y Salud en el Trabajo, ¿cuáles de las siguientes acciones llevó a cabo la entidad para mitigar riesgos laborales?:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Se implementó el Plan de Trabajo Anual en Seguridad y Salud conforme al sistema de gestión, en donde se verificaron las condiciones de seguridad y salud en el trabajo del personal a cargo de los archivos"
+      },
+      {
+        "neg": 0,
+        "label": "Se realizó seguimiento y control al Sistema de Gestión y Seguridad en el trabajo a partir de indicadores o herramientas de medición y evaluación para mejorar las condiciones de seguridad y salud en el trabajo del personal a cargo de los archivos"
+      },
+      {
+        "neg": 0,
+        "label": "A través de las decisiones adoptadas por el Comité Institucional de Gestión y Desempeño o Comité de Archivo, se adelantaron acciones de mejora continua que garantizaron las condiciones de seguridad y salud en el trabajo del personal a cargo de los archivos"
+      },
+      {
+        "neg": 1,
+        "label": "No se implementaron acciones para mitigar riesgos laborales del personal a cargo de los archivos"
+      }
+    ]
+  },
+  {
+    "id": "GDO241",
+    "text": "Respecto a la identificación, gestión y seguimiento a los riesgos asociados a los procesos de gestión documental y administración de archivos en la entidad, durante la vigencia evaluada:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Se implementaron controles para tratar los riesgos asociados al proceso de gestión documental y administración de archivos"
+      },
+      {
+        "neg": 0,
+        "label": "Se adelantaron actividades de seguimiento y control de los riesgos asociados al proceso de gestión documental y administración de archivos, mediante el diseño de indicadores, herramientas u otras acciones"
+      },
+      {
+        "neg": 0,
+        "label": "La alta dirección y los comités competentes tomaron decisiones basadas en las actividades adelantadas al proceso de gestión documental y administración de archivos y se realizó el respectivo seguimiento"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no ha identificado riesgos asociados al proceso de gestión documental y administración de archivos"
+      }
+    ]
+  }
+];
+
+function buildUI(){
+  const main=document.getElementById('mainContent');
+  main.innerHTML='';
+  questions.forEach(q=>{
+    const card=document.createElement('div');
+    card.className='card';
+    card.innerHTML=`
+      <div class="card-score-bar"><div class="card-score-fill" id="bar_${q.id}"></div></div>
+      <div class="card-header">
+        <span class="card-code">${q.id}</span>
+        <span class="card-question">${q.text}<span class="tipo-badge">${q.tipo}</span></span>
+      </div>
+      <div class="card-body" id="body_${q.id}"></div>
+    `;
+    const body=card.querySelector(`#body_${q.id}`);
+    q.options.forEach((opt,idx)=>{
+      const row=document.createElement('div');
+      row.className='option-row'+(opt.neg?' is-negative':'');
+      const cbId=`cb_${q.id}_${idx}`;
+      row.innerHTML=`
+        <div class="cb-wrap">
+          <input type="checkbox" id="${cbId}" data-q="${q.id}" data-neg="${opt.neg}" value="${opt.neg?0:POINTS_PER}">
+          <label class="cb-box" for="${cbId}"></label>
+        </div>
+        <div class="option-content">
+          <label class="option-label" for="${cbId}">
+            <span class="option-label-text ${opt.neg?'neg-label-text':''}">${opt.label}</span>
+            ${opt.neg===0?`<span class="status-badge status-bad" id="badge_${cbId}" style="display:none">Priorizar</span>`:''}
+          </label>
+          <input type="text" class="soporte-input" placeholder="Soporte / link / texto">
+        </div>
+      `;
+      body.appendChild(row);
+    });
+    main.appendChild(card);
+  });
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',actualizar));
+  actualizar();
+}
+
+function actualizar(){
+  calcular();actualizarEstados();actualizarProgress();
+}
+
+function calcular(){
+  let total=0;
+  const groups={};
+  document.querySelectorAll('input[type=checkbox]').forEach(ch=>{
+    const q=ch.dataset.q;
+    if(!groups[q])groups[q]=[];
+    groups[q].push(ch);
+  });
+  for(const q in groups){
+    const neg=groups[q].some(ch=>ch.checked&&ch.dataset.neg==='1');
+    if(neg)continue;
+    groups[q].forEach(ch=>{if(ch.checked)total+=parseFloat(ch.value);});
+  }
+  const fmt=total.toFixed(2);
+  document.getElementById('total').textContent=fmt;
+  document.getElementById('total2').textContent=fmt;
+  questions.forEach(q=>{
+    const g=groups[q.id]||[];
+    const neg=g.some(ch=>ch.checked&&ch.dataset.neg==='1');
+    let pts=0;
+    if(!neg)g.forEach(ch=>{if(ch.checked)pts+=parseFloat(ch.value);});
+    const max=q.options.filter(o=>o.neg===0).length*POINTS_PER;
+    const bar=document.getElementById(`bar_${q.id}`);
+    if(bar)bar.style.width=max>0?Math.min(100,(pts/max)*100)+'%':'0%';
+  });
+}
+
+function actualizarEstados(){
+  const touchedGroups={};
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    if(cb.checked)touchedGroups[cb.dataset.q]=true;
+  });
+  let checked=0,pending=0;
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    if(cb.dataset.neg==='1')return;
+    const badge=document.getElementById('badge_'+cb.id);
+    if(!badge)return;
+    const touched=touchedGroups[cb.dataset.q]||false;
+    if(cb.checked){
+      badge.textContent='Mantener y mejorar';
+      badge.className='status-badge status-ok';
+      badge.style.display='';
+      checked++;
+    } else if(touched){
+      badge.textContent='Priorizar';
+      badge.className='status-badge status-bad';
+      badge.style.display='';
+      pending++;
+    } else {
+      badge.style.display='none';
+    }
+  });
+  document.getElementById('checkedCount').textContent=checked;
+  document.getElementById('pendingCount').textContent=pending;
+}
+
+function actualizarProgress(){
+  const all=document.querySelectorAll('input[type=checkbox]');
+  let done=0;all.forEach(cb=>{if(cb.checked)done++;});
+  const pct=all.length>0?(done/all.length)*100:0;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressLabel').textContent=`${done} / ${all.length} opciones`;
+}
+
+function limpiar(){
+  document.querySelectorAll('input').forEach(i=>{
+    if(i.type==='checkbox')i.checked=false;
+    if(i.type==='text')i.value='';
+  });
+  actualizar();
+}
+
+function guardar() {
+  // Validar identificación
+  const nombre = (document.getElementById('ident_nombre')?.value || '').trim();
+  const dependencia = (document.getElementById('ident_dependencia')?.value || '').trim();
+  const vigencia = (document.getElementById('ident_vigencia')?.value || '').trim();
+  if (!nombre || !dependencia || !vigencia) {
+    const al = document.getElementById('identAlert');
+    if (al) { al.style.display = 'block'; setTimeout(()=>{ al.style.display='none'; }, 3500); }
+    return;
+  }
+
+  // Recoger respuestas
+  const data = [];
+  questions.forEach(q => {
+    const body = document.getElementById(`body_${q.id}`);
+    if (!body) return;
+    body.querySelectorAll('.option-row').forEach((row, idx) => {
+      const cb = row.querySelector('input[type=checkbox]');
+      const txt = row.querySelector('input[type=text]');
+      const badge = row.querySelector('.status-badge');
+      data.push({
+        pregunta: q.text,
+        codigo: q.id,
+        opcion: q.options[idx]?.label || '',
+        seleccionado: cb ? cb.checked : false,
+        soporte: txt ? txt.value : '',
+        estado: badge ? badge.textContent : ''
+      });
+    });
+  });
+
+  const puntaje = parseFloat(document.getElementById('total')?.textContent || '0');
+  const seleccionadas = parseInt(document.getElementById('checkedCount')?.textContent || '0');
+  const priorizar = parseInt(document.getElementById('pendingCount')?.textContent || '0');
+
+  const output = {
+    fecha_envio: new Date().toISOString(),
+    nombre_funcionario: nombre,
+    dependencia: dependencia,
+    vigencia: vigencia,
+    puntaje_total: puntaje,
+    total_seleccionadas: seleccionadas,
+    a_priorizar: priorizar,
+    respuestas: data
+  };
+
+  // 1. Enviar a Google Sheets via Apps Script
+  const SCRIPT_URL = 'REEMPLAZAR_CON_URL_DE_APPS_SCRIPT';
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(output)
+  }).then(() => {
+    const ok = document.getElementById('identSuccess');
+    if (ok) { ok.style.display = 'block'; setTimeout(()=>{ ok.style.display='none'; }, 4000); }
+  }).catch((err) => {
+    console.error('Error enviando a Sheets:', err);
+  });
+
+  // 2. Descargar JSON de respaldo
+
+  const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download='autodiagnostico_GDO.json';
+  a.click();
+}
+
+buildUI();
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'plan') renderPlan();
+}
+
+function getPlanItems() {
+  const rows = [];
+  questions.forEach(q => {
+    const body = document.getElementById('body_' + q.id);
+    if (!body) return;
+    const groupTouched = document.querySelector('input[data-q="' + q.id + '"]:checked');
+    if (!groupTouched) return;
+    body.querySelectorAll('.option-row').forEach((row, idx) => {
+      const cb = row.querySelector('input[type=checkbox]');
+      if (!cb || cb.dataset.neg === '1' || cb.checked) return;
+      rows.push({ qid: q.id, label: q.options[idx]?.label || '' });
+    });
+  });
+  return rows;
+}
+
+function updatePlanBadge() {
+  const badge = document.getElementById('planBadge');
+  if (!badge) return;
+  const n = getPlanItems().length;
+  badge.textContent = n;
+  badge.className = 'tab-badge' + (n === 0 ? ' zero' : '');
+}
+
+function renderPlan() {
+  updatePlanBadge();
+  const rows = getPlanItems();
+  const cont = document.getElementById('planContent');
+  if (!cont) return;
+  if (rows.length === 0) {
+    cont.innerHTML = '<div class="plan-empty"><div class="icon">✅</div>Sin ítems a priorizar todavía.<br>Complete el autodiagnóstico primero.</div>';
+    return;
+  }
+  let html = '<div class="plan-table-wrap"><table class="plan-table"><thead><tr><th>#</th><th>Código</th><th>Tema a Priorizar</th><th>Tarea a Realizar</th><th>Fecha Inicio</th><th>Fecha Final</th><th>Entregable</th><th>Responsable</th></tr></thead><tbody>';
+  rows.forEach((r, i) => {
+    const lbl = r.label.length > 90 ? r.label.substring(0, 90) + '…' : r.label;
+    html += `<tr><td style="text-align:center;color:var(--text-soft);font-weight:600">${i+1}</td><td><span class="code-pill">${r.qid}</span></td><td class="topic-cell">${lbl}</td><td><input type="text" id="pt_${i}_tarea" placeholder="Describir la tarea…"></td><td><input type="date" id="pt_${i}_inicio"></td><td><input type="date" id="pt_${i}_fin"></td><td><input type="text" id="pt_${i}_entregable" placeholder="Documento, informe…"></td><td><input type="text" id="pt_${i}_resp" placeholder="Nombre o cargo"></td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+
+function exportarPlan() {
+  const cont = document.getElementById('planContent');
+  if (!cont) return;
+  const filas = cont.querySelectorAll('tbody tr');
+  if (!filas.length) { alert('No hay ítems en el plan de trabajo.'); return; }
+  const plan = [];
+  filas.forEach((tr, i) => {
+    const tds = tr.querySelectorAll('td');
+    plan.push({ numero: i+1, codigo: tds[1]?.querySelector('.code-pill')?.textContent||'', tema: tds[2]?.textContent?.trim()||'', tarea: document.getElementById('pt_'+i+'_tarea')?.value||'', fecha_inicio: document.getElementById('pt_'+i+'_inicio')?.value||'', fecha_fin: document.getElementById('pt_'+i+'_fin')?.value||'', entregable: document.getElementById('pt_'+i+'_entregable')?.value||'', responsable: document.getElementById('pt_'+i+'_resp')?.value||'' });
+  });
+  const blob = new Blob([JSON.stringify({plan_de_trabajo: plan}, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan_de_trabajo.json'; a.click();
+}
+
+const _orig = actualizarFormulario;
+actualizarFormulario = function() { _orig(); updatePlanBadge(); };
+
+</script>
+</body>
+</html>
