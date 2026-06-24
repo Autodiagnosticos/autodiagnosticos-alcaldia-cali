@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Autodiagnóstico GTH — Gestión del Talento Humano</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+:root{
+  --navy:#0B2B5C;--navy-mid:#153D7A;--navy-light:#1E5299;
+  --gold:#C8A951;--gold-light:#F0D98A;
+  --surface:#F5F7FB;--card:#FFFFFF;--border:#DDE3EE;
+  --text:#1A2340;--text-soft:#5A6480;
+  --ok-bg:#E6F4EC;--ok-text:#1A6B3C;--ok-border:#7EC8A0;
+  --bad-bg:#FDF0EF;--bad-text:#B03020;--bad-border:#F4A89A;
+  --neg-bg:#F7F8FA;--neg-text:#8A94A6;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--surface);color:var(--text);line-height:1.5;}
+.header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);color:#fff;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(11,43,92,.3);}
+.header-inner{max-width:860px;margin:0 auto;padding:20px 24px 16px;display:flex;align-items:flex-start;gap:20px;}
+.header-icon{width:48px;height:48px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px;}
+.header-text{flex:1;}
+.header-text .eyebrow{font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--gold-light);text-transform:uppercase;margin-bottom:4px;}
+.header-text h1{font-size:17px;font-weight:700;line-height:1.3;color:#fff;}
+.header-text .subtitle{font-size:12px;color:rgba(255,255,255,.65);margin-top:3px;}
+.score-pill{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.22);border-radius:50px;padding:8px 16px;text-align:center;min-width:90px;flex-shrink:0;}
+.score-pill .score-val{font-size:22px;font-weight:700;color:var(--gold-light);line-height:1;}
+.score-pill .score-label{font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+.progress-bar-wrap{max-width:860px;margin:0 auto;padding:0 24px 12px;display:flex;align-items:center;gap:10px;}
+.progress-bar-track{flex:1;height:5px;background:rgba(255,255,255,.18);border-radius:99px;overflow:hidden;}
+.progress-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--gold-light),var(--gold));border-radius:99px;transition:width .4s ease;}
+.progress-label{font-size:10px;color:rgba(255,255,255,.55);white-space:nowrap;letter-spacing:.05em;}
+.main{max-width:860px;margin:0 auto;padding:28px 24px 60px;}
+.tipo-badge{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:99px;margin-left:8px;background:rgba(200,169,81,.18);color:var(--gold);border:1px solid rgba(200,169,81,.35);vertical-align:middle;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:18px;overflow:hidden;box-shadow:0 1px 4px rgba(11,43,92,.06);transition:box-shadow .2s;}
+.card:hover{box-shadow:0 4px 18px rgba(11,43,92,.1);}
+.card-score-bar{height:3px;background:var(--border);}
+.card-score-fill{height:100%;width:0%;background:var(--gold);transition:width .4s ease;}
+.card-header{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border);background:#FAFBFD;}
+.card-code{background:var(--navy);color:var(--gold-light);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:6px;white-space:nowrap;margin-top:1px;flex-shrink:0;}
+.card-question{font-size:13.5px;font-weight:600;color:var(--text);line-height:1.45;flex:1;}
+.card-body{padding:10px 0;}
+.option-row{display:flex;align-items:flex-start;padding:10px 20px;border-bottom:1px solid #F0F2F7;transition:background .15s;}
+.option-row:last-child{border-bottom:none;}
+.option-row:hover{background:#F5F7FB;}
+.option-row.is-negative{background:var(--neg-bg);}
+.option-row.is-negative:hover{background:#EEF0F5;}
+.cb-wrap{flex-shrink:0;margin-top:1px;}
+.cb-wrap input[type=checkbox]{display:none;}
+.cb-box{width:18px;height:18px;border:2px solid var(--border);border-radius:5px;background:#fff;display:flex;align-items:center;justify-content:center;transition:all .15s;cursor:pointer;flex-shrink:0;}
+.cb-wrap input:checked+.cb-box{background:var(--navy);border-color:var(--navy);}
+.cb-wrap input:checked+.cb-box::after{content:'';width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px);display:block;}
+.is-negative .cb-wrap input:checked+.cb-box{background:var(--neg-text);border-color:var(--neg-text);}
+.option-content{flex:1;display:flex;flex-direction:column;gap:6px;padding-left:12px;}
+.option-label{font-size:13px;color:var(--text);line-height:1.45;cursor:pointer;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.option-label-text{flex:1;}
+.status-badge{font-size:10px;font-weight:600;letter-spacing:.06em;padding:2px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0;text-transform:uppercase;}
+.status-ok{background:var(--ok-bg);color:var(--ok-text);border:1px solid var(--ok-border);}
+.status-bad{background:var(--bad-bg);color:var(--bad-text);border:1px solid var(--bad-border);}
+.soporte-input{width:100%;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-family:inherit;font-size:12px;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s;}
+.soporte-input::placeholder{color:#AEBACF;}
+.soporte-input:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(30,82,153,.12);background:#fff;}
+.is-negative .soporte-input{background:var(--neg-bg);}
+.neg-label-text{color:var(--neg-text);font-style:italic;}
+.actions{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border:none;border-radius:9px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;}
+.btn-primary{background:var(--navy);color:#fff;box-shadow:0 2px 8px rgba(11,43,92,.3);}
+.btn-primary:hover{background:var(--navy-light);transform:translateY(-1px);}
+.btn-secondary{background:#fff;color:var(--text-soft);border:1.5px solid var(--border);}
+.btn-secondary:hover{background:var(--surface);border-color:#B0BAD0;}
+.btn svg{width:15px;height:15px;}
+.summary-bar{position:fixed;bottom:0;left:0;right:0;background:var(--navy);border-top:2px solid var(--gold);padding:10px 24px;display:flex;align-items:center;justify-content:center;gap:32px;z-index:90;box-shadow:0 -4px 20px rgba(11,43,92,.25);}
+.stat-item{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.8);font-size:12px;}
+.stat-val{font-size:16px;font-weight:700;color:var(--gold-light);}
+.stat-divider{width:1px;height:30px;background:rgba(255,255,255,.15);}
+
+  /* ── CONSULTOR en progress-bar ── */
+  .progress-bar-wrap {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .consultant-info {
+    margin-left: auto;
+    text-align: right;
+    line-height: 1.35;
+    flex-shrink: 0;
+  }
+  .consultant-info .ci-name  { font-size: 11px; font-weight: 700; color: var(--gold-light); display: block; white-space: nowrap; }
+  .consultant-info .ci-role  { font-size: 10px; color: rgba(255,255,255,0.75); display: block; }
+  .consultant-info .ci-contact { font-size: 9.5px; color: rgba(255,255,255,0.55); display: block; }
+
+  /* ── TABS ── */
+  .tab-nav {
+    max-width: 860px; margin: 0 auto;
+    padding: 14px 24px 0;
+    display: flex; gap: 6px;
+    background: var(--surface);
+  }
+  .tab-btn {
+    padding: 9px 20px;
+    border: 1.5px solid var(--border); border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    background: #E8ECF5; color: var(--text-soft);
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .tab-btn.active { background: var(--card); color: var(--navy); border-color: var(--border); box-shadow: 0 -2px 8px rgba(11,43,92,0.07); }
+  .tab-btn:hover:not(.active) { background: #D8DDED; }
+  .tab-badge { background: var(--bad-bg); color: var(--bad-text); border: 1px solid var(--bad-border); font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 99px; }
+  .tab-badge.zero { background: #eee; color: #aaa; border-color: #ddd; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── PLAN DE TRABAJO ── */
+  .plan-wrap { max-width: 860px; margin: 0 auto; padding: 28px 24px 80px; }
+  .plan-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .plan-title { font-size: 16px; font-weight: 700; color: var(--navy); }
+  .plan-subtitle { font-size: 12px; color: var(--text-soft); margin-top: 2px; }
+  .plan-empty { text-align: center; padding: 60px 20px; color: var(--text-soft); font-size: 13px; }
+  .plan-empty .icon { font-size: 40px; margin-bottom: 12px; }
+  .plan-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  .plan-table { width: 100%; border-collapse: collapse; font-size: 12px; background: var(--card); }
+  .plan-table th { background: var(--navy); color: #fff; padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; white-space: nowrap; }
+  .plan-table th:first-child { border-radius: 12px 0 0 0; }
+  .plan-table th:last-child  { border-radius: 0 12px 0 0; }
+  .plan-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .plan-table tr:last-child td { border-bottom: none; }
+  .plan-table tr:nth-child(even) td { background: var(--surface); }
+  .plan-table .topic-cell { font-weight: 500; color: var(--navy); max-width: 220px; }
+  .plan-table .code-pill { font-size: 10px; font-weight: 700; background: var(--navy); color: #fff; padding: 2px 7px; border-radius: 99px; display: inline-block; margin-bottom: 4px; }
+  .plan-table input[type=text], .plan-table input[type=date] { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-family: inherit; font-size: 11px; color: var(--text); background: #fff; outline: none; }
+  .plan-table input:focus { border-color: var(--focus); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+  .btn-export-plan { background: var(--gold); color: var(--navy); border: none; border-radius: 8px; padding: 9px 18px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .btn-export-plan:hover { background: var(--gold-light); }
+
+
+  /* ── BANNER IDENTIFICACIÓN ── */
+  .ident-banner {
+    background: linear-gradient(135deg, #0B2B5C 0%, #153D7A 100%);
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    box-shadow: 0 3px 20px rgba(11,43,92,0.35);
+  }
+  .ident-inner {
+    max-width: 860px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+  }
+  .ident-field {
+    display: flex; flex-direction: column; flex: 1; min-width: 160px;
+  }
+  .ident-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.55); text-transform: uppercase; margin-bottom: 4px;
+  }
+  .ident-input {
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 7px;
+    padding: 7px 11px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 12px; color: #fff;
+    outline: none; width: 100%;
+  }
+  .ident-input::placeholder { color: rgba(255,255,255,0.35); }
+  .ident-input:focus { border-color: #C8A951; background: rgba(255,255,255,0.15); }
+  .ident-required { color: #F0D98A; }
+  .ident-alert {
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #B03020; color: #fff; border-radius: 10px;
+    padding: 12px 24px; font-size: 13px; font-weight: 600;
+    z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s;
+  }
+  .ident-success {
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #1A6B3C; color: #fff; border-radius: 10px;
+    padding: 12px 24px; font-size: 13px; font-weight: 600;
+    z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s;
+  }
+  @keyframes fadeIn { from { opacity:0; top:10px; } to { opacity:1; top:20px; } }
+
+</style>
+</head>
+<body>
+
+<!-- BANNER IDENTIFICACIÓN -->
+<div class="ident-banner">
+  <div class="ident-inner">
+    <div class="ident-field">
+      <span class="ident-label">Nombre completo <span class="ident-required">*</span></span>
+      <input class="ident-input" type="text" id="ident_nombre" placeholder="Funcionario que diligencia…">
+    </div>
+    <div class="ident-field">
+      <span class="ident-label">Dependencia / Área <span class="ident-required">*</span></span>
+      <input class="ident-input" type="text" id="ident_dependencia" placeholder="Secretaría, Despacho, Área…">
+    </div>
+    <div class="ident-field" style="max-width:120px;min-width:100px">
+      <span class="ident-label">Vigencia <span class="ident-required">*</span></span>
+      <input class="ident-input" type="number" id="ident_vigencia" placeholder="2024" min="2020" max="2030">
+    </div>
+  </div>
+</div>
+<div class="ident-alert" id="identAlert">⚠️ Complete Nombre, Dependencia y Vigencia antes de guardar.</div>
+<div class="ident-success" id="identSuccess">✅ Respuestas enviadas correctamente a Google Sheets.</div>
+<!-- FIN BANNER -->
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-icon">👥</div>
+    <div class="header-text">
+      <div class="eyebrow">Función Pública · Índice GTH · Gestión del Talento Humano</div>
+      <h1>Autodiagnóstico de Gestión del Talento Humano</h1>
+      <div class="subtitle">Marque las opciones que aplican y registre el soporte correspondiente</div>
+    </div>
+    <div class="score-pill">
+      <div class="score-val" id="total">0</div>
+      <div class="score-label">Puntos</div>
+    </div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">0 / 0 opciones</div>
+      <div class="consultant-info">
+        <span class="ci-name">Ilder Luis Palta Velasco</span>
+        <span class="ci-role">Consultor Organizacional</span>
+        <span class="ci-contact">📱 317 297 1922 · ✉️ luispalta@gmail.com</span>
+      </div>
+  </div>
+</div>
+<div class="tab-nav">
+  <button class="tab-btn active" id="tab-diag" onclick="switchTab('diag')">📋 Autodiagnóstico</button>
+  <button class="tab-btn" id="tab-plan" onclick="switchTab('plan')">🗂️ Plan de Trabajo <span class="tab-badge zero" id="planBadge">0</span></button>
+</div>
+<div class="tab-panel active" id="panel-diag">
+<div class="main" id="mainContent"></div>
+</div><!-- cierre panel-diag -->
+
+<div class="tab-panel" id="panel-plan">
+  <div class="plan-wrap">
+    <div class="plan-header-row">
+      <div>
+        <div class="plan-title">🗂️ Plan de Trabajo</div>
+        <div class="plan-subtitle">Opciones marcadas como <strong>Priorizar</strong> — complete fechas, entregable y responsable</div>
+      </div>
+      <button class="btn-export-plan" onclick="exportarPlan()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar Plan (JSON)
+      </button>
+    </div>
+    <div id="planContent">
+      <div class="plan-empty"><div class="icon">✅</div>Sin ítems a priorizar.<br>Complete el autodiagnóstico primero.</div>
+    </div>
+  </div>
+</div>
+
+<div class="main" style="padding-top:0">
+  <div class="actions">
+    <button class="btn btn-primary" onclick="guardar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Guardar resultado
+    </button>
+    <button class="btn btn-secondary" onclick="limpiar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
+      Limpiar todo
+    </button>
+  </div>
+</div>
+<div class="summary-bar">
+  <div class="stat-item"><span>Puntaje total:</span><span class="stat-val" id="total2">0</span><span>pts</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat-item"><span>Seleccionadas:</span><span class="stat-val" id="checkedCount">0</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat-item"><span>A priorizar:</span><span class="stat-val" id="pendingCount">0</span></div>
+</div>
+<script>
+const POINTS_PER = 0.9803921569;
+const questions = [
+  {
+    "id": "GTH200",
+    "text": "¿La entidad elaboró, publicó e implementó el Plan Estratégico de Talento Humano durante la vigencia evaluada?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GTH201",
+    "text": "Para la elaboración del Plan Estratégico de Talento Humano, la entidad tuvo en cuenta:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "La información del direccionamiento y la planeación estratégica de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "La normatividad aplicable a la gestión del talento humano (Ley 909 de 2004, Decreto 1083 de 2015, Decreto Ley 785 de 2005, Decreto Ley  770 de 2005, actos administrativos de creación o modificación de planta o estructura)"
+      },
+      {
+        "neg": 0,
+        "label": "Caracterización de los servidores de acuerdo con la información registrada en el Sistema de Información y Gestión del Empleo Público - SIGEP"
+      },
+      {
+        "neg": 0,
+        "label": "Resultados del diagnóstico institucional (matriz GETH) y avances de la vigencia inmediatamente anterior"
+      },
+      {
+        "neg": 0,
+        "label": "Otra. ¿Cuál?:"
+      }
+    ]
+  },
+  {
+    "id": "GTH202",
+    "text": "El Plan Estratégico de Talento Humano de la entidad incorporó actividades para los siguientes aspectos:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Inducción y reinducción"
+      },
+      {
+        "neg": 0,
+        "label": "Capacitación"
+      },
+      {
+        "neg": 0,
+        "label": "Bienestar"
+      },
+      {
+        "neg": 0,
+        "label": "Incentivos"
+      },
+      {
+        "neg": 0,
+        "label": "Provisión de empleos vacantes"
+      },
+      {
+        "neg": 0,
+        "label": "Seguridad y salud en el trabajo"
+      },
+      {
+        "neg": 0,
+        "label": "Ingreso al empleo público de personas con discapacidad según el Decreto 2011 de 2017"
+      },
+      {
+        "neg": 0,
+        "label": "Ingreso de jóvenes entre 18 y 28 años, en cumplimiento del Decreto 2365 de 2019 y Ley 2214 de 2022"
+      },
+      {
+        "neg": 0,
+        "label": "Evaluación de desempeño"
+      },
+      {
+        "neg": 0,
+        "label": "Promoción y apropiación de la integridad en el servicio público en cumplimiento de la Ley 2016 de 2020"
+      },
+      {
+        "neg": 0,
+        "label": "Clima organizacional"
+      },
+      {
+        "neg": 0,
+        "label": "Actualización de la información en el SIGEP"
+      },
+      {
+        "neg": 0,
+        "label": "Programa de desvinculación asistida"
+      }
+    ]
+  },
+  {
+    "id": "GTH206",
+    "text": "¿La entidad reportó las vacantes en la Oferta Pública de Empleos de Carrera (OPEC)?\nSegún la Comisión Nacional del Servicio Civil, la Oferta Pública de Empleos de Carrera (OPEC) es un listado donde se",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí. Indique el número total de vacantes reportadas a la OPEC, durante la  vigencia evaluada:  106"
+      },
+      {
+        "neg": 1,
+        "label": "No ha reportado"
+      },
+      {
+        "neg": 1,
+        "label": "No aplica. Justifique la razón:"
+      }
+    ]
+  },
+  {
+    "id": "GTH207",
+    "text": "Indique qué acciones formales y documentadas adelantó la entidad durante la vigencia evaluada, en cumplimiento del Decreto 1800 de 2019 (marque todas las que apliquen y cuenten con acto administrativo, estudio o informe de soporte):",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Analizar y ajustar los procesos y procedimientos existentes en la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Evaluar la incidencia de las nuevas funciones o metas asignadas al organismo o entidad, en relación con productos y/ o servicios y cobertura institucional"
+      },
+      {
+        "neg": 0,
+        "label": "Analizar los perfiles y las cargas de trabajo de los empleos que se requieran para el cumplimiento de las funciones"
+      },
+      {
+        "neg": 0,
+        "label": "Evaluar el modelo de operación de la entidad y las distintas modalidades legales para la eficiente y eficaz prestación de servicios"
+      },
+      {
+        "neg": 0,
+        "label": "Revisar los objetos de los contratos de prestación de servicios, cuando a ello hubiere lugar, garantizando que se ajusten a los parámetros señalados en la Ley 80 de 1993, a la jurisprudencia de las Altas Cortes y en especial a las sentencias C-614 de 2009 y C-171 de 2012 de la Corte Constitucional"
+      },
+      {
+        "neg": 0,
+        "label": "Como producto de los anteriores análisis, se adelantó el estudio técnico que soportó la ampliación de la planta de personal"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GTH208",
+    "text": "¿La entidad tiene planeado un proceso de formalización del empleo público? \nFormalización del empleo: es una política estratégica que le permitirá a las entidades actualizar su planta de",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí. Indique el número de empleos que tiene previstos formalizar: 70 empleos"
+      },
+      {
+        "neg": 1,
+        "label": "No. Explique las razones:"
+      }
+    ]
+  },
+  {
+    "id": "GTH209",
+    "text": "Registre el nivel de avance de personas vinculadas en el SIGEP frente a los cargos de la planta de personal aprobada por norma",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Del 0% al 60%"
+      },
+      {
+        "neg": 0,
+        "label": "Del 61% al 80%"
+      },
+      {
+        "neg": 0,
+        "label": "Del 81% al 100%"
+      }
+    ]
+  },
+  {
+    "id": "GTH210",
+    "text": "Si el resultado está por debajo del 61% señale las razones:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Baja conectividad a internet"
+      },
+      {
+        "neg": 0,
+        "label": "Personal insuficiente"
+      },
+      {
+        "neg": 0,
+        "label": "Desconocimiento en el manejo del SIGEP"
+      },
+      {
+        "neg": 1,
+        "label": "Otro. ¿Cuál?: NO APLICA Los resultados estuvieron por encima del 61%"
+      }
+    ]
+  },
+  {
+    "id": "GTH212",
+    "text": "La inducción para los servidores públicos nuevos en la entidad se llevó a cabo:\nDe acuerdo con el Decreto 1567 de 1998, art. 7 establece: programa de Inducción. Es un proceso dirigido a iniciar al",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "En los primeros dos meses contados a partir de la posesión"
+      },
+      {
+        "neg": 0,
+        "label": "Después de 2 meses contados a partir de la posesión"
+      },
+      {
+        "neg": 1,
+        "label": "No se realiza inducción a servidores nuevos"
+      }
+    ]
+  },
+  {
+    "id": "GTH213",
+    "text": "Para la selección de gerentes públicos y empleos de libre nombramiento y remoción en la vigencia evaluada, indique cuáles de las siguientes actuaciones adelantó la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Verificó en la planta de personal que existieran servidores de carrera que pudieran ocupar dichos empleos en encargo o comisión"
+      },
+      {
+        "neg": 0,
+        "label": "Verificó que los candidatos cumplían con los requisitos del empleo"
+      },
+      {
+        "neg": 0,
+        "label": "Aplicó las pruebas necesarias para garantizar la idoneidad de los candidatos"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GTH214",
+    "text": "¿Qué mecanismos empleó la entidad para seleccionar a los gerentes públicos y/o los empleos de libre nombramiento y remoción?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Grupo de meritocracia de Función Pública"
+      },
+      {
+        "neg": 0,
+        "label": "Empresas privadas de selección y reclutamiento de personal o cazatalentos (head-hunters)"
+      },
+      {
+        "neg": 0,
+        "label": "Universidades"
+      },
+      {
+        "neg": 0,
+        "label": "Proceso de selección realizado por el área de talento humano de la entidad, o quien haga sus veces"
+      },
+      {
+        "neg": 0,
+        "label": "Otro. ¿Cuál?:"
+      },
+      {
+        "neg": 1,
+        "label": "No emplea ningún mecanismo"
+      },
+      {
+        "neg": 1,
+        "label": "No aplica. Justifique la razón:"
+      }
+    ]
+  },
+  {
+    "id": "GTH215",
+    "text": "De acuerdo con lo establecido en la Ley 909 de 2004 (artículo 47), ¿la entidad contaba con gerentes públicos con corte a 31 de diciembre de 2025?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí. Indique el número total de gerentes públicos: 90"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GTH216",
+    "text": "Con respecto a los cargos de gerencia pública que tenía la entidad al 31 de diciembre de 2025 indique:\nCARGOS DE GERENCIA PÚBLICA: los cargos que conlleven ejercicio de responsabilidad directiva en la administración",
+    "tipo": "Selección múltiple numérica",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Número total de acuerdos de gestión suscritos:"
+      },
+      {
+        "neg": 0,
+        "label": "Número total de acuerdos de gestión evaluados:"
+      }
+    ]
+  },
+  {
+    "id": "GTH217",
+    "text": "Los acuerdos de gestión suscritos con los gerentes públicos que ingresaron a la entidad en el año 2025 fueron concertados y formalizados:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "En los primeros 4 meses de gestión"
+      },
+      {
+        "neg": 0,
+        "label": "Posterior a los primeros 4 meses de gestión"
+      },
+      {
+        "neg": 0,
+        "label": "En el año 2026 no ingresó ningún gerente público a la entidad"
+      }
+    ]
+  },
+  {
+    "id": "GTH218",
+    "text": "La inducción para gerentes públicos en la entidad se llevó a cabo de manera:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Virtual a través del curso dispuesto por Función Pública"
+      },
+      {
+        "neg": 0,
+        "label": "Presencial o virtual con la ESAP"
+      },
+      {
+        "neg": 0,
+        "label": "Directamente en la entidad"
+      },
+      {
+        "neg": 1,
+        "label": "No hace inducción a gerentes públicos"
+      }
+    ]
+  },
+  {
+    "id": "GTH219",
+    "text": "Indique el número de servidores públicos de carrera administrativa y de libre nombramiento y remoción con evaluación del desempeño por nivel jerárquico. Asegúrese de responder todas las opciones de respuesta. Si para algún nivel no tiene o no aplica digite cero (0).",
+    "tipo": "Selección múltiple numérica",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Asesor"
+      },
+      {
+        "neg": 0,
+        "label": "Profesional"
+      },
+      {
+        "neg": 0,
+        "label": "Técnico"
+      },
+      {
+        "neg": 0,
+        "label": "Asistencial"
+      }
+    ]
+  },
+  {
+    "id": "GTH220",
+    "text": "Durante la vigencia evaluada, ¿la entidad realizó un análisis sistemático (cuantitativo y/o cualitativo) de los resultados de la evaluación de desempeño laboral y de los acuerdos de gestión, y los articuló con el cumplimiento de metas institucionales?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Parcialmente, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No se hace este análisis"
+      }
+    ]
+  },
+  {
+    "id": "GTH221",
+    "text": "La reinducción para los servidores de la entidad se hace:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 1,
+        "label": "No se hace reinducción a los servidores"
+      },
+      {
+        "neg": 0,
+        "label": "Con periodicidad superior a 2 años"
+      },
+      {
+        "neg": 0,
+        "label": "Cada 2 años"
+      }
+    ]
+  },
+  {
+    "id": "GTH223",
+    "text": "De acuerdo con el Plan Nacional de Formación y Capacitación 2023-2030, indique cuáles de sus ejes implementó la entidad en su Plan Institucional de Capacitación, durante la vigencia evaluada:\nEn concordancia con lo establecido en el Plan Nacional de Formación y Capacitación",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Transformación digital y cibercultura"
+      },
+      {
+        "neg": 0,
+        "label": "Paz total, memoria y derechos humanos"
+      },
+      {
+        "neg": 0,
+        "label": "Territorio, vida y ambiente"
+      },
+      {
+        "neg": 0,
+        "label": "Probidad, ética e identidad de lo público"
+      },
+      {
+        "neg": 0,
+        "label": "Mujeres, inclusión y diversidad"
+      },
+      {
+        "neg": 0,
+        "label": "Habilidades y competencias"
+      },
+      {
+        "neg": 1,
+        "label": "No ha implementado ninguno de los ejes"
+      },
+      {
+        "neg": 1,
+        "label": "No tiene conocimiento del tema"
+      }
+    ]
+  },
+  {
+    "id": "GTH225",
+    "text": "Frente a la medición del clima organizacional, realizada en los últimos dos años, la entidad:\nDe acuerdo con el artículo 2.2.10.7 del Decreto 1083 de 2015, el artículo 24 del Decreto-ley 1567 de 1998 y con el",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Implementó mejoras con base en los resultados y cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Se realizó la medición del clima, pero sus resultados no fueron utilizados para implementar mejoras"
+      },
+      {
+        "neg": 1,
+        "label": "No se han realizado mediciones del clima organizacional en los últimos dos años"
+      }
+    ]
+  },
+  {
+    "id": "GTH226",
+    "text": "¿La entidad adelantó diagnósticos relacionados con la cultura organizacional de la entidad?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Sí, y se han hecho intervenciones a partir de dicho diagnóstico y se cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GTH227",
+    "text": "¿La entidad implementó la estrategia salas amigas de la familia lactante, en cumplimiento a lo establecido en la Ley 1823 de 2017?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí. Indique el número de madres beneficiadas durante la vigencia evaluada: 4 colbaoradoras beneficiadas"
+      },
+      {
+        "neg": 0,
+        "label": "Si se implementó la estrategia, pero para la vigencia evaluada no hubo madres usuarias"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GTH228",
+    "text": "En cumplimiento de lo establecido en la Ley 1811 de 2016, ¿la entidad promovió el uso de la bicicleta por parte de los servidores públicos?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí. Indique el número de servidores que usaron bicicleta para llegar al trabajo durante la vigencia evaluada:"
+      },
+      {
+        "neg": 0,
+        "label": "Sí. Se promovió el uso de la bicicleta y se cuenta con las evidencias, pero ningún servidor hizo uso de ella durante la vigencia evaluada"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GTH229",
+    "text": "A la luz de la Ley 1010 de 2006 la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Contó con un protocolo para atender casos de acoso laboral"
+      },
+      {
+        "neg": 0,
+        "label": "Contó con un comité de convivencia laboral"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GTH230",
+    "text": "¿La entidad contó con un diagnóstico de accesibilidad y análisis de puestos de trabajo, con recomendaciones para la implementación de ajustes razonables de acuerdo con los servidores públicos vinculados, en especial aquellos con discapacidad?\nLos ajustes razonables hacen referencia a los cambios, adecuaciones y adaptaciones necesarias para facilitar el",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Parcialmente, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GTH231",
+    "text": "¿La entidad ha cumplido con la implementación de los estándares mínimos del Sistema de Gestión de Seguridad y Salud en el Trabajo SG – SST de que trata la Resolución 312 de 2019, que reglamenta la Ley 1562 de 2012?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      },
+      {
+        "neg": 1,
+        "label": "No aplica. Indique la razón:"
+      }
+    ]
+  },
+  {
+    "id": "GTH233",
+    "text": "¿La entidad cuenta con una Comisión de Personal atendiendo lo establecido en la Ley 909 de 2004?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      },
+      {
+        "neg": 1,
+        "label": "No aplica. Justifique la razón:"
+      }
+    ]
+  },
+  {
+    "id": "GTH234",
+    "text": "Con respecto a los servidores que se retiraron de la entidad, durante la vigencia evaluada:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Se identificaron y documentaron las razones del retiro"
+      },
+      {
+        "neg": 0,
+        "label": "Se analizaron las causas del retiro y se tuvieron en cuenta para mejorar la gestión del talento humano"
+      },
+      {
+        "neg": 0,
+        "label": "Se ofrecieron acciones de acompañamiento para la transición laboral o personal"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      },
+      {
+        "neg": 1,
+        "label": "No aplica porque no se retiró ningún servidor en la vigencia evaluada"
+      }
+    ]
+  },
+  {
+    "id": "GTH235",
+    "text": "Los mecanismos que implementó la entidad para transferir el conocimiento de los servidores que se retiraron, a quienes continúan vinculados:\nEntre dichos mecanismos se pueden considerar: capacitaciones, asesorías, proceso de empalme o protocolos",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Fueron suficientes y adecuados"
+      },
+      {
+        "neg": 0,
+        "label": "Aseguraron continuidad de procesos y claridad sobre responsabilidades"
+      },
+      {
+        "neg": 1,
+        "label": "No se implementaron mecanismos para transferir el conocimiento"
+      }
+    ]
+  },
+  {
+    "id": "GTH236",
+    "text": "Para la elaboración del Plan Institucional de Capacitación (PIC) la entidad desarrolló las siguientes fases:\nEl Plan Institucional de Capacitación (PIC) es la visión sistémica para el diseño de un conjunto de acciones que se",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Priorización de recursos en materia de capacitación y formación"
+      },
+      {
+        "neg": 0,
+        "label": "Diagnóstico sobre las necesidades de capacitación"
+      },
+      {
+        "neg": 0,
+        "label": "Ejecución del plan"
+      },
+      {
+        "neg": 0,
+        "label": "Seguimiento del plan"
+      },
+      {
+        "neg": 0,
+        "label": "Evaluación del plan"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no elaboró el PIC"
+      }
+    ]
+  },
+  {
+    "id": "GTH237",
+    "text": "En la aplicación del Sistema de Gestión de Seguridad y Salud en el Trabajo SG – SST, la entidad ha contemplado los siguientes aspectos:\nEl Sistema de Gestión de Seguridad y Salud en el Trabajo permite implementar y gestionar las medidas de",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Exposición a factores de riesgo psicosocial"
+      },
+      {
+        "neg": 0,
+        "label": "Vigilancia de la salud de los trabajadores"
+      },
+      {
+        "neg": 0,
+        "label": "Prevención, preparación y respuesta ante emergencias, incluidas las relacionadas con los riesgos ambientales"
+      },
+      {
+        "neg": 0,
+        "label": "Cambios internos o externos que afecten las condiciones de trabajo o el entorno laboral\nCambios internos o externos que modifiquen condiciones de trabajo o ambiente laboral"
+      }
+    ]
+  },
+  {
+    "id": "GTH238",
+    "text": "¿Cuáles de las siguientes acciones implementó la entidad durante la vigencia evaluada, en materia de  Bienestar Social e Incentivos Institucionales?:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Contó con un Plan de Bienestar Social e Incentivos vigente, articulado al Plan Estratégico de Talento Humano (PETH) y al Plan de Acción Institucional (PAI)"
+      },
+      {
+        "neg": 0,
+        "label": "Realizó un diagnóstico de necesidades de bienestar y condiciones psicosociales, incluyendo factores diferenciales y territoriales, como base para definir los programas del plan"
+      },
+      {
+        "neg": 0,
+        "label": "Implementó programas de promoción de la salud física y mental, con acciones preventivas derivadas del Sistema de Gestión de Seguridad y Salud en el Trabajo (SG-SST)"
+      },
+      {
+        "neg": 0,
+        "label": "Se ejecutaron estrategias de reconocimiento e incentivos no pecuniarios, vinculadas al desempeño institucional, al trabajo en equipo y a la integridad pública"
+      },
+      {
+        "neg": 0,
+        "label": "Se desarrollaron acciones de conciliación de la vida laboral, familiar y personal"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no implementó ninguna de las acciones anteriores"
+      }
+    ]
+  }
+];
+
+function buildUI(){
+  const main=document.getElementById('mainContent');
+  main.innerHTML='';
+  questions.forEach(q=>{
+    const card=document.createElement('div');
+    card.className='card';
+    card.innerHTML=`
+      <div class="card-score-bar"><div class="card-score-fill" id="bar_${q.id}"></div></div>
+      <div class="card-header">
+        <span class="card-code">${q.id}</span>
+        <span class="card-question">${q.text}<span class="tipo-badge">${q.tipo}</span></span>
+      </div>
+      <div class="card-body" id="body_${q.id}"></div>
+    `;
+    const body=card.querySelector(`#body_${q.id}`);
+    q.options.forEach((opt,idx)=>{
+      const row=document.createElement('div');
+      row.className='option-row'+(opt.neg?' is-negative':'');
+      const cbId=`cb_${q.id}_${idx}`;
+      row.innerHTML=`
+        <div class="cb-wrap">
+          <input type="checkbox" id="${cbId}" data-q="${q.id}" data-neg="${opt.neg}" value="${opt.neg?0:POINTS_PER}">
+          <label class="cb-box" for="${cbId}"></label>
+        </div>
+        <div class="option-content">
+          <label class="option-label" for="${cbId}">
+            <span class="option-label-text ${opt.neg?'neg-label-text':''}">${opt.label}</span>
+            ${opt.neg===0?`<span class="status-badge status-bad" id="badge_${cbId}" style="display:none">Priorizar</span>`:''}
+          </label>
+          <input type="text" class="soporte-input" placeholder="Soporte / link / texto">
+        </div>
+      `;
+      body.appendChild(row);
+    });
+    main.appendChild(card);
+  });
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',actualizar));
+  actualizar();
+}
+
+function actualizar(){
+  calcular();actualizarEstados();actualizarProgress();
+}
+
+function calcular(){
+  let total=0;
+  const groups={};
+  document.querySelectorAll('input[type=checkbox]').forEach(ch=>{
+    const q=ch.dataset.q;
+    if(!groups[q])groups[q]=[];
+    groups[q].push(ch);
+  });
+  for(const q in groups){
+    const neg=groups[q].some(ch=>ch.checked&&ch.dataset.neg==='1');
+    if(neg)continue;
+    groups[q].forEach(ch=>{if(ch.checked)total+=parseFloat(ch.value);});
+  }
+  const fmt=total.toFixed(2);
+  document.getElementById('total').textContent=fmt;
+  document.getElementById('total2').textContent=fmt;
+  questions.forEach(q=>{
+    const g=groups[q.id]||[];
+    const neg=g.some(ch=>ch.checked&&ch.dataset.neg==='1');
+    let pts=0;
+    if(!neg)g.forEach(ch=>{if(ch.checked)pts+=parseFloat(ch.value);});
+    const max=q.options.filter(o=>o.neg===0).length*POINTS_PER;
+    const bar=document.getElementById(`bar_${q.id}`);
+    if(bar)bar.style.width=max>0?Math.min(100,(pts/max)*100)+'%':'0%';
+  });
+}
+
+function actualizarEstados(){
+  const touchedGroups={};
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    if(cb.checked)touchedGroups[cb.dataset.q]=true;
+  });
+  let checked=0,pending=0;
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    if(cb.dataset.neg==='1')return;
+    const badge=document.getElementById('badge_'+cb.id);
+    if(!badge)return;
+    const touched=touchedGroups[cb.dataset.q]||false;
+    if(cb.checked){
+      badge.textContent='Mantener y mejorar';
+      badge.className='status-badge status-ok';
+      badge.style.display='';
+      checked++;
+    } else if(touched){
+      badge.textContent='Priorizar';
+      badge.className='status-badge status-bad';
+      badge.style.display='';
+      pending++;
+    } else {
+      badge.style.display='none';
+    }
+  });
+  document.getElementById('checkedCount').textContent=checked;
+  document.getElementById('pendingCount').textContent=pending;
+}
+
+function actualizarProgress(){
+  const all=document.querySelectorAll('input[type=checkbox]');
+  let done=0;all.forEach(cb=>{if(cb.checked)done++;});
+  const pct=all.length>0?(done/all.length)*100:0;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressLabel').textContent=`${done} / ${all.length} opciones`;
+}
+
+function limpiar(){
+  document.querySelectorAll('input').forEach(i=>{
+    if(i.type==='checkbox')i.checked=false;
+    if(i.type==='text')i.value='';
+  });
+  actualizar();
+}
+
+function guardar() {
+  // Validar identificación
+  const nombre = (document.getElementById('ident_nombre')?.value || '').trim();
+  const dependencia = (document.getElementById('ident_dependencia')?.value || '').trim();
+  const vigencia = (document.getElementById('ident_vigencia')?.value || '').trim();
+  if (!nombre || !dependencia || !vigencia) {
+    const al = document.getElementById('identAlert');
+    if (al) { al.style.display = 'block'; setTimeout(()=>{ al.style.display='none'; }, 3500); }
+    return;
+  }
+
+  // Recoger respuestas
+  const data = [];
+  questions.forEach(q => {
+    const body = document.getElementById(`body_${q.id}`);
+    if (!body) return;
+    body.querySelectorAll('.option-row').forEach((row, idx) => {
+      const cb = row.querySelector('input[type=checkbox]');
+      const txt = row.querySelector('input[type=text]');
+      const badge = row.querySelector('.status-badge');
+      data.push({
+        pregunta: q.text,
+        codigo: q.id,
+        opcion: q.options[idx]?.label || '',
+        seleccionado: cb ? cb.checked : false,
+        soporte: txt ? txt.value : '',
+        estado: badge ? badge.textContent : ''
+      });
+    });
+  });
+
+  const puntaje = parseFloat(document.getElementById('total')?.textContent || '0');
+  const seleccionadas = parseInt(document.getElementById('checkedCount')?.textContent || '0');
+  const priorizar = parseInt(document.getElementById('pendingCount')?.textContent || '0');
+
+  const output = {
+    fecha_envio: new Date().toISOString(),
+    nombre_funcionario: nombre,
+    dependencia: dependencia,
+    vigencia: vigencia,
+    puntaje_total: puntaje,
+    total_seleccionadas: seleccionadas,
+    a_priorizar: priorizar,
+    respuestas: data
+  };
+
+  // 1. Enviar a Google Sheets via Apps Script
+  const SCRIPT_URL = 'REEMPLAZAR_CON_URL_DE_APPS_SCRIPT';
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(output)
+  }).then(() => {
+    const ok = document.getElementById('identSuccess');
+    if (ok) { ok.style.display = 'block'; setTimeout(()=>{ ok.style.display='none'; }, 4000); }
+  }).catch((err) => {
+    console.error('Error enviando a Sheets:', err);
+  });
+
+  // 2. Descargar JSON de respaldo
+
+  const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download='autodiagnostico_GTH.json';
+  a.click();
+}
+
+buildUI();
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'plan') renderPlan();
+}
+
+function getPlanItems() {
+  const rows = [];
+  questions.forEach(q => {
+    const body = document.getElementById('body_' + q.id);
+    if (!body) return;
+    const groupTouched = document.querySelector('input[data-q="' + q.id + '"]:checked');
+    if (!groupTouched) return;
+    body.querySelectorAll('.option-row').forEach((row, idx) => {
+      const cb = row.querySelector('input[type=checkbox]');
+      if (!cb || cb.dataset.neg === '1' || cb.checked) return;
+      rows.push({ qid: q.id, label: q.options[idx]?.label || '' });
+    });
+  });
+  return rows;
+}
+
+function updatePlanBadge() {
+  const badge = document.getElementById('planBadge');
+  if (!badge) return;
+  const n = getPlanItems().length;
+  badge.textContent = n;
+  badge.className = 'tab-badge' + (n === 0 ? ' zero' : '');
+}
+
+function renderPlan() {
+  updatePlanBadge();
+  const rows = getPlanItems();
+  const cont = document.getElementById('planContent');
+  if (!cont) return;
+  if (rows.length === 0) {
+    cont.innerHTML = '<div class="plan-empty"><div class="icon">✅</div>Sin ítems a priorizar todavía.<br>Complete el autodiagnóstico primero.</div>';
+    return;
+  }
+  let html = '<div class="plan-table-wrap"><table class="plan-table"><thead><tr><th>#</th><th>Código</th><th>Tema a Priorizar</th><th>Tarea a Realizar</th><th>Fecha Inicio</th><th>Fecha Final</th><th>Entregable</th><th>Responsable</th></tr></thead><tbody>';
+  rows.forEach((r, i) => {
+    const lbl = r.label.length > 90 ? r.label.substring(0, 90) + '…' : r.label;
+    html += `<tr><td style="text-align:center;color:var(--text-soft);font-weight:600">${i+1}</td><td><span class="code-pill">${r.qid}</span></td><td class="topic-cell">${lbl}</td><td><input type="text" id="pt_${i}_tarea" placeholder="Describir la tarea…"></td><td><input type="date" id="pt_${i}_inicio"></td><td><input type="date" id="pt_${i}_fin"></td><td><input type="text" id="pt_${i}_entregable" placeholder="Documento, informe…"></td><td><input type="text" id="pt_${i}_resp" placeholder="Nombre o cargo"></td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+
+function exportarPlan() {
+  const cont = document.getElementById('planContent');
+  if (!cont) return;
+  const filas = cont.querySelectorAll('tbody tr');
+  if (!filas.length) { alert('No hay ítems en el plan de trabajo.'); return; }
+  const plan = [];
+  filas.forEach((tr, i) => {
+    const tds = tr.querySelectorAll('td');
+    plan.push({ numero: i+1, codigo: tds[1]?.querySelector('.code-pill')?.textContent||'', tema: tds[2]?.textContent?.trim()||'', tarea: document.getElementById('pt_'+i+'_tarea')?.value||'', fecha_inicio: document.getElementById('pt_'+i+'_inicio')?.value||'', fecha_fin: document.getElementById('pt_'+i+'_fin')?.value||'', entregable: document.getElementById('pt_'+i+'_entregable')?.value||'', responsable: document.getElementById('pt_'+i+'_resp')?.value||'' });
+  });
+  const blob = new Blob([JSON.stringify({plan_de_trabajo: plan}, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan_de_trabajo.json'; a.click();
+}
+
+const _orig = actualizarFormulario;
+actualizarFormulario = function() { _orig(); updatePlanBadge(); };
+
+</script>
+</body>
+</html>
