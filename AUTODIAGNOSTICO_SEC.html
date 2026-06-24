@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Autodiagnóstico SEC — Servicio al Ciudadano</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+:root{
+  --navy:#0B2B5C;--navy-mid:#153D7A;--navy-light:#1E5299;
+  --gold:#C8A951;--gold-light:#F0D98A;
+  --surface:#F5F7FB;--card:#FFFFFF;--border:#DDE3EE;
+  --text:#1A2340;--text-soft:#5A6480;
+  --ok-bg:#E6F4EC;--ok-text:#1A6B3C;--ok-border:#7EC8A0;
+  --bad-bg:#FDF0EF;--bad-text:#B03020;--bad-border:#F4A89A;
+  --neg-bg:#F7F8FA;--neg-text:#8A94A6;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--surface);color:var(--text);line-height:1.5;}
+.header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);color:#fff;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(11,43,92,.3);}
+.header-inner{max-width:860px;margin:0 auto;padding:20px 24px 16px;display:flex;align-items:flex-start;gap:20px;}
+.header-icon{width:48px;height:48px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px;}
+.header-text{flex:1;}
+.header-text .eyebrow{font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--gold-light);text-transform:uppercase;margin-bottom:4px;}
+.header-text h1{font-size:17px;font-weight:700;line-height:1.3;color:#fff;}
+.header-text .subtitle{font-size:12px;color:rgba(255,255,255,.65);margin-top:3px;}
+.score-pill{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.22);border-radius:50px;padding:8px 16px;text-align:center;min-width:90px;flex-shrink:0;}
+.score-pill .score-val{font-size:22px;font-weight:700;color:var(--gold-light);line-height:1;}
+.score-pill .score-label{font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+.progress-bar-wrap{max-width:860px;margin:0 auto;padding:0 24px 12px;display:flex;align-items:center;gap:10px;}
+.progress-bar-track{flex:1;height:5px;background:rgba(255,255,255,.18);border-radius:99px;overflow:hidden;}
+.progress-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--gold-light),var(--gold));border-radius:99px;transition:width .4s ease;}
+.progress-label{font-size:10px;color:rgba(255,255,255,.55);white-space:nowrap;letter-spacing:.05em;}
+.main{max-width:860px;margin:0 auto;padding:28px 24px 60px;}
+.tipo-badge{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:99px;margin-left:8px;background:rgba(200,169,81,.18);color:var(--gold);border:1px solid rgba(200,169,81,.35);vertical-align:middle;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:18px;overflow:hidden;box-shadow:0 1px 4px rgba(11,43,92,.06);transition:box-shadow .2s;}
+.card:hover{box-shadow:0 4px 18px rgba(11,43,92,.1);}
+.card-score-bar{height:3px;background:var(--border);}
+.card-score-fill{height:100%;width:0%;background:var(--gold);transition:width .4s ease;}
+.card-header{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border);background:#FAFBFD;}
+.card-code{background:var(--navy);color:var(--gold-light);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:6px;white-space:nowrap;margin-top:1px;flex-shrink:0;}
+.card-question{font-size:13.5px;font-weight:600;color:var(--text);line-height:1.45;flex:1;}
+.card-body{padding:10px 0;}
+.option-row{display:flex;align-items:flex-start;padding:10px 20px;border-bottom:1px solid #F0F2F7;transition:background .15s;}
+.option-row:last-child{border-bottom:none;}
+.option-row:hover{background:#F5F7FB;}
+.option-row.is-negative{background:var(--neg-bg);}
+.option-row.is-negative:hover{background:#EEF0F5;}
+.cb-wrap{flex-shrink:0;margin-top:1px;}
+.cb-wrap input[type=checkbox]{display:none;}
+.cb-box{width:18px;height:18px;border:2px solid var(--border);border-radius:5px;background:#fff;display:flex;align-items:center;justify-content:center;transition:all .15s;cursor:pointer;flex-shrink:0;}
+.cb-wrap input:checked+.cb-box{background:var(--navy);border-color:var(--navy);}
+.cb-wrap input:checked+.cb-box::after{content:'';width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px);display:block;}
+.is-negative .cb-wrap input:checked+.cb-box{background:var(--neg-text);border-color:var(--neg-text);}
+.option-content{flex:1;display:flex;flex-direction:column;gap:6px;padding-left:12px;}
+.option-label{font-size:13px;color:var(--text);line-height:1.45;cursor:pointer;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.option-label-text{flex:1;}
+.status-badge{font-size:10px;font-weight:600;letter-spacing:.06em;padding:2px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0;text-transform:uppercase;}
+.status-ok{background:var(--ok-bg);color:var(--ok-text);border:1px solid var(--ok-border);}
+.status-bad{background:var(--bad-bg);color:var(--bad-text);border:1px solid var(--bad-border);}
+.soporte-input{width:100%;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-family:inherit;font-size:12px;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s;}
+.soporte-input::placeholder{color:#AEBACF;}
+.soporte-input:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(30,82,153,.12);background:#fff;}
+.is-negative .soporte-input{background:var(--neg-bg);}
+.neg-label-text{color:var(--neg-text);font-style:italic;}
+.actions{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border:none;border-radius:9px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;}
+.btn-primary{background:var(--navy);color:#fff;box-shadow:0 2px 8px rgba(11,43,92,.3);}
+.btn-primary:hover{background:var(--navy-light);transform:translateY(-1px);}
+.btn-secondary{background:#fff;color:var(--text-soft);border:1.5px solid var(--border);}
+.btn-secondary:hover{background:var(--surface);border-color:#B0BAD0;}
+.btn svg{width:15px;height:15px;}
+.summary-bar{position:fixed;bottom:0;left:0;right:0;background:var(--navy);border-top:2px solid var(--gold);padding:10px 24px;display:flex;align-items:center;justify-content:center;gap:32px;z-index:90;box-shadow:0 -4px 20px rgba(11,43,92,.25);}
+.stat-item{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.8);font-size:12px;}
+.stat-val{font-size:16px;font-weight:700;color:var(--gold-light);}
+.stat-divider{width:1px;height:30px;background:rgba(255,255,255,.15);}
+
+  /* ── CONSULTOR en progress-bar ── */
+  .progress-bar-wrap {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .consultant-info {
+    margin-left: auto;
+    text-align: right;
+    line-height: 1.35;
+    flex-shrink: 0;
+  }
+  .consultant-info .ci-name  { font-size: 11px; font-weight: 700; color: var(--gold-light); display: block; white-space: nowrap; }
+  .consultant-info .ci-role  { font-size: 10px; color: rgba(255,255,255,0.75); display: block; }
+  .consultant-info .ci-contact { font-size: 9.5px; color: rgba(255,255,255,0.55); display: block; }
+
+  /* ── TABS ── */
+  .tab-nav {
+    max-width: 860px; margin: 0 auto;
+    padding: 14px 24px 0;
+    display: flex; gap: 6px;
+    background: var(--surface);
+  }
+  .tab-btn {
+    padding: 9px 20px;
+    border: 1.5px solid var(--border); border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    background: #E8ECF5; color: var(--text-soft);
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .tab-btn.active { background: var(--card); color: var(--navy); border-color: var(--border); box-shadow: 0 -2px 8px rgba(11,43,92,0.07); }
+  .tab-btn:hover:not(.active) { background: #D8DDED; }
+  .tab-badge { background: var(--bad-bg); color: var(--bad-text); border: 1px solid var(--bad-border); font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 99px; }
+  .tab-badge.zero { background: #eee; color: #aaa; border-color: #ddd; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── PLAN DE TRABAJO ── */
+  .plan-wrap { max-width: 860px; margin: 0 auto; padding: 28px 24px 80px; }
+  .plan-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .plan-title { font-size: 16px; font-weight: 700; color: var(--navy); }
+  .plan-subtitle { font-size: 12px; color: var(--text-soft); margin-top: 2px; }
+  .plan-empty { text-align: center; padding: 60px 20px; color: var(--text-soft); font-size: 13px; }
+  .plan-empty .icon { font-size: 40px; margin-bottom: 12px; }
+  .plan-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  .plan-table { width: 100%; border-collapse: collapse; font-size: 12px; background: var(--card); }
+  .plan-table th { background: var(--navy); color: #fff; padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; white-space: nowrap; }
+  .plan-table th:first-child { border-radius: 12px 0 0 0; }
+  .plan-table th:last-child  { border-radius: 0 12px 0 0; }
+  .plan-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .plan-table tr:last-child td { border-bottom: none; }
+  .plan-table tr:nth-child(even) td { background: var(--surface); }
+  .plan-table .topic-cell { font-weight: 500; color: var(--navy); max-width: 220px; }
+  .plan-table .code-pill { font-size: 10px; font-weight: 700; background: var(--navy); color: #fff; padding: 2px 7px; border-radius: 99px; display: inline-block; margin-bottom: 4px; }
+  .plan-table input[type=text], .plan-table input[type=date] { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-family: inherit; font-size: 11px; color: var(--text); background: #fff; outline: none; }
+  .plan-table input:focus { border-color: var(--focus); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+  .btn-export-plan { background: var(--gold); color: var(--navy); border: none; border-radius: 8px; padding: 9px 18px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .btn-export-plan:hover { background: var(--gold-light); }
+
+
+  /* ── BANNER IDENTIFICACIÓN ── */
+  .ident-banner {
+    background: linear-gradient(135deg, #0B2B5C 0%, #153D7A 100%);
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    box-shadow: 0 3px 20px rgba(11,43,92,0.35);
+  }
+  .ident-inner {
+    max-width: 860px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+  }
+  .ident-field {
+    display: flex; flex-direction: column; flex: 1; min-width: 160px;
+  }
+  .ident-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.55); text-transform: uppercase; margin-bottom: 4px;
+  }
+  .ident-input {
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 7px;
+    padding: 7px 11px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 12px; color: #fff;
+    outline: none; width: 100%;
+  }
+  .ident-input::placeholder { color: rgba(255,255,255,0.35); }
+  .ident-input:focus { border-color: #C8A951; background: rgba(255,255,255,0.15); }
+  .ident-required { color: #F0D98A; }
+  .ident-alert {
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #B03020; color: #fff; border-radius: 10px;
+    padding: 12px 24px; font-size: 13px; font-weight: 600;
+    z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s;
+  }
+  .ident-success {
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #1A6B3C; color: #fff; border-radius: 10px;
+    padding: 12px 24px; font-size: 13px; font-weight: 600;
+    z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s;
+  }
+  @keyframes fadeIn { from { opacity:0; top:10px; } to { opacity:1; top:20px; } }
+
+</style>
+</head>
+<body>
+
+<!-- BANNER IDENTIFICACIÓN -->
+<div class="ident-banner">
+  <div class="ident-inner">
+    <div class="ident-field">
+      <span class="ident-label">Nombre completo <span class="ident-required">*</span></span>
+      <input class="ident-input" type="text" id="ident_nombre" placeholder="Funcionario que diligencia…">
+    </div>
+    <div class="ident-field">
+      <span class="ident-label">Dependencia / Área <span class="ident-required">*</span></span>
+      <input class="ident-input" type="text" id="ident_dependencia" placeholder="Secretaría, Despacho, Área…">
+    </div>
+    <div class="ident-field" style="max-width:120px;min-width:100px">
+      <span class="ident-label">Vigencia <span class="ident-required">*</span></span>
+      <input class="ident-input" type="number" id="ident_vigencia" placeholder="2024" min="2020" max="2030">
+    </div>
+  </div>
+</div>
+<div class="ident-alert" id="identAlert">⚠️ Complete Nombre, Dependencia y Vigencia antes de guardar.</div>
+<div class="ident-success" id="identSuccess">✅ Respuestas enviadas correctamente a Google Sheets.</div>
+<!-- FIN BANNER -->
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-icon">🏛️</div>
+    <div class="header-text">
+      <div class="eyebrow">Función Pública · Índice SEC · Servicio al Ciudadano</div>
+      <h1>Autodiagnóstico de Servicio al Ciudadano</h1>
+      <div class="subtitle">Marque las opciones que aplican y registre el soporte correspondiente</div>
+    </div>
+    <div class="score-pill">
+      <div class="score-val" id="total">0</div>
+      <div class="score-label">Puntos</div>
+    </div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">0 / 0 opciones</div>
+      <div class="consultant-info">
+        <span class="ci-name">Ilder Luis Palta Velasco</span>
+        <span class="ci-role">Consultor Organizacional</span>
+        <span class="ci-contact">📱 317 297 1922 · ✉️ luispalta@gmail.com</span>
+      </div>
+  </div>
+</div>
+<div class="tab-nav">
+  <button class="tab-btn active" id="tab-diag" onclick="switchTab('diag')">📋 Autodiagnóstico</button>
+  <button class="tab-btn" id="tab-plan" onclick="switchTab('plan')">🗂️ Plan de Trabajo <span class="tab-badge zero" id="planBadge">0</span></button>
+</div>
+<div class="tab-panel active" id="panel-diag">
+<div class="main" id="mainContent"></div>
+</div><!-- cierre panel-diag -->
+
+<div class="tab-panel" id="panel-plan">
+  <div class="plan-wrap">
+    <div class="plan-header-row">
+      <div>
+        <div class="plan-title">🗂️ Plan de Trabajo</div>
+        <div class="plan-subtitle">Opciones marcadas como <strong>Priorizar</strong> — complete fechas, entregable y responsable</div>
+      </div>
+      <button class="btn-export-plan" onclick="exportarPlan()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar Plan (JSON)
+      </button>
+    </div>
+    <div id="planContent">
+      <div class="plan-empty"><div class="icon">✅</div>Sin ítems a priorizar.<br>Complete el autodiagnóstico primero.</div>
+    </div>
+  </div>
+</div>
+
+<div class="main" style="padding-top:0">
+  <div class="actions">
+    <button class="btn btn-primary" onclick="guardar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Guardar resultado
+    </button>
+    <button class="btn btn-secondary" onclick="limpiar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
+      Limpiar todo
+    </button>
+  </div>
+</div>
+<div class="summary-bar">
+  <div class="stat-item"><span>Puntaje total:</span><span class="stat-val" id="total2">0</span><span>pts</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat-item"><span>Seleccionadas:</span><span class="stat-val" id="checkedCount">0</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat-item"><span>A priorizar:</span><span class="stat-val" id="pendingCount">0</span></div>
+</div>
+<script>
+const POINTS_PER = 0.7462686567;
+const questions = [
+  {
+    "id": "SEC200",
+    "text": "La estrategia anual de servicio a la ciudadanía de la entidad para la vigencia evaluada:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Se formuló, se aprobó y se integró al plan de acción anual"
+      },
+      {
+        "neg": 0,
+        "label": "Se formuló y se aprobó, pero no se integró al plan de acción anual"
+      },
+      {
+        "neg": 0,
+        "label": "Se formuló, pero no se aprobó"
+      },
+      {
+        "neg": 1,
+        "label": "No se formuló"
+      }
+    ]
+  },
+  {
+    "id": "SEC201",
+    "text": "Para la planeación de la estrategia anual de servicio a la ciudadanía en el marco del plan institucional, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Realizó un autodiagnóstico para conocer el estado actual"
+      },
+      {
+        "neg": 0,
+        "label": "Estableció prioridades y definió acciones para implementar la estrategia"
+      },
+      {
+        "neg": 0,
+        "label": "Estableció objetivos, metas, responsables y fechas"
+      },
+      {
+        "neg": 0,
+        "label": "Estableció indicadores de gestión y medición"
+      },
+      {
+        "neg": 0,
+        "label": "Asignó recursos para su ejecución"
+      },
+      {
+        "neg": 0,
+        "label": "Generó espacios participativos con las diferentes áreas de la entidad y grupos de valor externos, para la construcción y priorización de las acciones"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "SEC202",
+    "text": "Para la elaboración del autodiagnóstico base para la planeación de la estrategia anual de servicio a la ciudadanía, la entidad tomó como insumos:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Los ejercicios de caracterización de ciudadanía y grupos de valor"
+      },
+      {
+        "neg": 0,
+        "label": "Los resultados y recomendaciones de la medición del desempeño de la política de servicio al ciudadano y de las otras políticas de relacionamiento con la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Los resultados de los informes de la gestión de Derechos de Petición: peticiones, quejas, reclamos, sugerencias y denuncias (PQRSD)"
+      },
+      {
+        "neg": 0,
+        "label": "Los resultados de los espacios de participación ciudadana (incluye acciones de rendición de cuentas cuando apliquen)"
+      },
+      {
+        "neg": 0,
+        "label": "Los resultados de los informes emitidos por entes de control, veedurías ciudadanas u otros actores"
+      },
+      {
+        "neg": 0,
+        "label": "Los resultados de las encuestas de percepción y de evaluación de la experiencia ciudadana"
+      },
+      {
+        "neg": 0,
+        "label": "Otros estudios nacionales (encuesta de percepción de ambiente y desempeño institucional nacional (EDI) - departamental (EDID) del DANE) o internacionales, o informes internos"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "SEC203",
+    "text": "La estrategia anual de servicio a la ciudadanía en el marco del plan institucional para la vigencia evaluada definió:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Un responsable, área o grupo que lidere la estrategia de servicio a la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Acciones para la oferta institucional de información pública, trámites, servicios, espacios de diálogo, control social, participación y de construcción con la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Canales de atención suficientes, accesibles e incluyentes para dar respuestas a las PQRSD"
+      },
+      {
+        "neg": 0,
+        "label": "Acciones de lenguaje claro, comprensible e incluyente de acuerdo con la Circular Externa 100-010-2021 de Función Pública"
+      },
+      {
+        "neg": 0,
+        "label": "Protocolos o lineamientos para el servicio o relacionamiento con la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Procesos y procedimientos para el servicio y relacionamiento con la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Acciones de publicación y actualización de la información contenida en el \"Menú Atención y Servicios a la Ciudadanía\" de la página web"
+      },
+      {
+        "neg": 0,
+        "label": "Acciones con enfoque diferencial poblacional, de acuerdo con el contexto y las necesidades particulares de las ciudadanías"
+      },
+      {
+        "neg": 0,
+        "label": "Acciones que garanticen la accesibilidad física, web  y comunicativa de personas en condición de discapacidad"
+      },
+      {
+        "neg": 0,
+        "label": "Actividades que integren y articulen los servicios y trámites para facilitar el acceso de la ciudadanía, a través de ferias, centros integrados de servicios, entre otros"
+      },
+      {
+        "neg": 0,
+        "label": "Acciones para documentar buenas prácticas en el servicio o relacionamiento con la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Herramientas o mecanismos de evaluación del servicio y medición de la experiencia ciudadana"
+      },
+      {
+        "neg": 0,
+        "label": "Acciones de caracterización de la ciudadanía y grupos de valor"
+      },
+      {
+        "neg": 0,
+        "label": "Otros. ¿Cuáles?: Propuesta de mejoras para fortalecer la implementación de la política de servicio al ciudadano"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "SEC204",
+    "text": "Señale las acciones de lenguaje claro, comprensible e incluyente incluidas en la estrategia anual de servicio o relacionamiento con la ciudadanía:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Articulación con el comité de gestión y desempeño institucional o la instancia que se haya definido de acuerdo con la naturaleza de la entidad (acción estratégica)"
+      },
+      {
+        "neg": 0,
+        "label": "Adecuación y adaptación de contenidos en manuales, procesos, procedimientos y protocolos"
+      },
+      {
+        "neg": 0,
+        "label": "Adecuación y adaptación de contenidos para poblaciones específicas, según necesidades comunicativas identificadas"
+      },
+      {
+        "neg": 0,
+        "label": "Adecuación y adaptación de contenidos para procesos de comunicación, divulgación y formación a ciudadanías y grupos de valor"
+      },
+      {
+        "neg": 0,
+        "label": "Diseño o divulgación de sesiones, talleres o jornadas de formación en lenguaje claro, comprensible e incluyente, en el marco del plan institucional de capacitaciones (PIC)"
+      },
+      {
+        "neg": 0,
+        "label": "Adecuación y adaptación de contenidos relacionados con la oferta de la entidad: trámites, bienes, servicios, etc."
+      },
+      {
+        "neg": 0,
+        "label": "Incorporación de lenguaje claro, comprensible e incluyente en la estrategia de comunicaciones (acciones de comunicación)"
+      },
+      {
+        "neg": 0,
+        "label": "Diseño de formatos, plantillas y respuestas tipo a PQRSDF de las ciudadanías en lenguaje claro, comprensible e incluyente"
+      }
+    ]
+  },
+  {
+    "id": "SEC205",
+    "text": "Señale los grupos de valor que participaron en la elaboración de la estrategia anual de servicio a la ciudadanía:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Servidores/as y contratistas de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Ciudadanías en general"
+      },
+      {
+        "neg": 0,
+        "label": "Personas en condición de discapacidad"
+      },
+      {
+        "neg": 0,
+        "label": "Personas con identidades de género diversas"
+      },
+      {
+        "neg": 0,
+        "label": "Personas en proceso de reintegración y reincorporación"
+      },
+      {
+        "neg": 0,
+        "label": "Personas pertenecientes a grupos étnicos"
+      },
+      {
+        "neg": 0,
+        "label": "Servidores/as y contratistas de otras entidades"
+      },
+      {
+        "neg": 0,
+        "label": "Colaboradores/as y empleados/as de la empresa privada"
+      },
+      {
+        "neg": 0,
+        "label": "Academia"
+      },
+      {
+        "neg": 0,
+        "label": "Colectivos u organizaciones de la sociedad civil relacionados con el quehacer de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Otros. ¿Cuáles?:"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguno de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "SEC206",
+    "text": "Frente a las acciones de fortalecimiento del talento humano para el relacionamiento con la ciudadanía, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Estableció incentivos o estímulos para resaltar el trabajo de los servidores y contratistas que participan en la atención y relacionamiento con la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Identificó e incorporó las necesidades de capacitación del talento humano de la entidad, para fortalecer las habilidades y competencias en materia de servicio y relacionamiento con la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Desarrolló acciones de promoción del Código de Integridad y cultura de servicio"
+      },
+      {
+        "neg": 0,
+        "label": "Otra. ¿Cuál?:"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguno de los anteriores"
+      }
+    ]
+  },
+  {
+    "id": "SEC207",
+    "text": "La entidad incluyó en sus planes de capacitación, inducción y reinducción actividades para fortalecer los conocimientos y habilidades en:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Protocolos de servicio y relacionamiento con la ciudadanía para todos los canales de atención"
+      },
+      {
+        "neg": 0,
+        "label": "Normatividad de servicio a las ciudadanías"
+      },
+      {
+        "neg": 0,
+        "label": "Prevención temprana y superación de la estigmatización de las personas en proceso de reincorporación y reintegración"
+      },
+      {
+        "neg": 0,
+        "label": "Caracterización de ciudadanía y grupos de valor"
+      },
+      {
+        "neg": 0,
+        "label": "Evaluación del servicio y medición de la experiencia ciudadana"
+      },
+      {
+        "neg": 0,
+        "label": "Gestión de peticiones, quejas, reclamos, sugerencias y denuncias (PQRSD)"
+      },
+      {
+        "neg": 0,
+        "label": "Servicio ciudadano incluyente"
+      },
+      {
+        "neg": 0,
+        "label": "Accesibilidad y de relacionamiento con personas con discapacidad"
+      },
+      {
+        "neg": 0,
+        "label": "Enfoque diferencial"
+      },
+      {
+        "neg": 0,
+        "label": "Otros. ¿Cuáles?:"
+      }
+    ]
+  },
+  {
+    "id": "SEC208",
+    "text": "En la entidad, la dependencia encargada del servicio y el relacionamiento con la ciudadanía tuvo dentro de sus responsabilidades:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Liderar las políticas relación del Estado con la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Desarrollar el ejercicio de caracterización de la ciudadanía y grupos de valor de acuerdo con los lineamientos vigentes"
+      },
+      {
+        "neg": 0,
+        "label": "Formular, implementar, hacer seguimiento y evaluar las políticas de relación del Estado con la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Coordinar con otras dependencias y el área de planeación, las acciones de las políticas de la relación Estado con la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Divulgar interna y externamente la oferta institucional, canales y escenarios de relacionamiento y toda información clave que facilite el ejercicio de derechos y cumplimiento de deberes ciudadanos ( compartida)"
+      },
+      {
+        "neg": 0,
+        "label": "Actualizar y simplificar los procesos, procedimientos y protocolos de servicio para fortalecer el relacionamiento con los grupos de valor"
+      },
+      {
+        "neg": 0,
+        "label": "Gestionar las adecuaciones y mejoras de la infraestructura física, tecnológica, humana, financiera y administrativa, para fortalecer la interacción con la ciudadanía y sus grupos de valor"
+      },
+      {
+        "neg": 0,
+        "label": "Actualizar, verificar y usar la información en las herramientas o sistemas donde se registran los datos de atención a la ciudadanía, para realizar seguimiento a los servicios"
+      },
+      {
+        "neg": 0,
+        "label": "Coordinar con el líder de gestión humana de la entidad, la capacitación, cualificación y reconocimiento del talento humano de la entidad en temas del servicio y el relacionamiento con la ciudadanía y los grupos de valor"
+      },
+      {
+        "neg": 0,
+        "label": "Gestionar los Derechos de Petición: peticiones, quejas, reclamos, sugerencias y denuncias (PQRSD) y la administración de los canales de atención de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Liderar y apoyar las acciones de lenguaje claro, comprensible e incluyente en la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Hacer seguimiento, medición y evaluación de la experiencia ciudadana en los diferentes escenarios de relacionamiento con la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Proponer mejoras a la oferta institucional y de los escenarios de relacionamiento a partir de los resultados del seguimiento, medición y evaluación de la experiencia ciudadana"
+      },
+      {
+        "neg": 0,
+        "label": "Promover y desarrollar acciones para facilitar el acceso de personas con discapacidad a la oferta institucional, la información pública, control social y la participación (con participación)"
+      }
+    ]
+  },
+  {
+    "id": "SEC211",
+    "text": "Señale los canales de atención que la entidad puso a disposición de la ciudadanía y que operaron en la vigencia evaluada: DESARROLLO TERRITORIAL",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Presencial"
+      },
+      {
+        "neg": 0,
+        "label": "Telefónico"
+      },
+      {
+        "neg": 0,
+        "label": "Virtual"
+      },
+      {
+        "neg": 0,
+        "label": "Itinerante o alternativos (ejemplo, puntos móviles de atención, ferias, caravanas de servicio, etc)"
+      },
+      {
+        "neg": 0,
+        "label": "Centros integrados de servicios"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguno de los anteriores"
+      }
+    ]
+  },
+  {
+    "id": "SEC214",
+    "text": "Para el desarrollo o participación en jornadas itinerantes o alternativas de relacionamiento con las ciudadanías, la entidad: (Sugiero articular con participación ciudadana) Ferias de servicio - DESARROLLO TERRITORIAL",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Caracterizó el territorio, las ciudadanías y los grupos de valor a donde llevó su oferta institucional"
+      },
+      {
+        "neg": 0,
+        "label": "Definió la oferta institucional para llevar al territorio, de acuerdo con la caracterización elaborada"
+      },
+      {
+        "neg": 0,
+        "label": "Divulgó y convocó a la ciudadanía y grupos de valor que participen en jornadas itinerantes o alternativas de relacionamiento"
+      },
+      {
+        "neg": 0,
+        "label": "Desarrolló acciones para garantizar el acceso a derechos, bienes, y servicios de las ciudadanías en condiciones de igualdad"
+      },
+      {
+        "neg": 0,
+        "label": "Estableció mecanismos de medición y seguimiento sobre el desarrollo de estas jornadas itinerantes o alternativas de relacionamiento con las ciudadanías"
+      }
+    ]
+  },
+  {
+    "id": "SEC215",
+    "text": "Durante la vigencia evaluada el Menú Atención y Servicios a la Ciudadanía de su sitio web permitió el acceso a la información y contenidos relacionados con:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Trámites, Otros Procedimientos Administrativos y consultas de acceso a información pública"
+      },
+      {
+        "neg": 0,
+        "label": "La oferta institucional de información pública"
+      },
+      {
+        "neg": 0,
+        "label": "Canales habilitados para la atención a la ciudadanía y demás grupos caracterizados"
+      },
+      {
+        "neg": 0,
+        "label": "Mecanismo para agendamiento de citas para atención presencial a usuarios, e información de horarios de atención en sedes físicas"
+      },
+      {
+        "neg": 0,
+        "label": "Formulario de peticiones, quejas, reclamos, sugerencias y denuncias (PQRSD)"
+      },
+      {
+        "neg": 0,
+        "label": "Herramientas o instrumentos de medición y evaluación de la experiencia ciudadana implementados por la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Enlace al Protocolo de Atención al Ciudadano de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Enlace a la Carta de Trato Digno"
+      },
+      {
+        "neg": 0,
+        "label": "Enlace a la Estrategia de Servicio a la Ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Enlace a la encuesta de percepción ciudadana, así como a sus resultados e informes, con sus respectivos objetivos e instructivos"
+      },
+      {
+        "neg": 0,
+        "label": "Otros. ¿Cuáles?:"
+      },
+      {
+        "neg": 1,
+        "label": "No disponen del Menú Atención y Servicios a la Ciudadanía"
+      }
+    ]
+  },
+  {
+    "id": "SEC216",
+    "text": "El formulario de Peticiones, Quejas, Reclamos, Sugerencias y Denuncias (PQRSD), dispuesto en el Menú de Atención y Servicios a la Ciudadanía a través del sitio web, contó con las siguientes condiciones técnicas:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Mensaje de confirmación de recibido por la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Validación de campos mediante la que se alertó al ciudadano sobre errores o falta de información en el diligenciamiento del formulario, de forma visible y accesible para todas las personas"
+      },
+      {
+        "neg": 0,
+        "label": "Mecanismo para que los correos electrónicos remitidos de manera automática no se categorizaran como NO deseados o SPAM"
+      },
+      {
+        "neg": 0,
+        "label": "Mecanismos de seguimiento en línea para que el ciudadano verificara el estado de respuesta de su petición, queja, reclamo, sugerencia y denuncia (PQRSD)"
+      },
+      {
+        "neg": 0,
+        "label": "Mecanismos para informar al ciudadano el motivo y las opciones para hacer nuevamente su solicitud, en caso de que el sistema presentara errores durante el diligenciamiento del formulario"
+      },
+      {
+        "neg": 0,
+        "label": "Vinculó las solicitudes de información pública como una tipología en el sistema de peticiones, quejas, reclamos, sugerencias y denuncias (PQRSD), para gestionarlas y hacerles seguimiento"
+      },
+      {
+        "neg": 0,
+        "label": "Opción para ser diligenciado y enviado a través de dispositivos móviles"
+      },
+      {
+        "neg": 0,
+        "label": "Medidas de seguridad digital y de la información, acorde a los lineamientos del anexo 3 de la resolución 1519 de 2020"
+      },
+      {
+        "neg": 0,
+        "label": "Otros. ¿Cuáles?:"
+      }
+    ]
+  },
+  {
+    "id": "SEC217",
+    "text": "A partir de los resultados de la evaluación del servicio y medición de la experiencia ciudadana, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Identificó debilidades y fortalezas en los escenarios de relacionamiento con la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Definió acciones para la mejora continua de cada escenario de relacionamiento con la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Implementó acciones para gestionar la mejora continua  y de cada escenario de relacionamiento con la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Documentó las buenas prácticas de relacionamiento con la ciudadanía"
+      },
+      {
+        "neg": 1,
+        "label": "No desarrolló acciones evaluación del servicio y medición de la experiencia ciudadana"
+      }
+    ]
+  },
+  {
+    "id": "SEC220",
+    "text": "Con el fin de promover la accesibilidad y atender las necesidades de las personas con discapacidad, la entidad contó con:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Ajustes razonables para facilitar el acceso de personas con discapacidad y grupos de valor a la oferta institucional"
+      },
+      {
+        "neg": 0,
+        "label": "Ayudas a través de la página web y otros recursos tecnológicos que facilitaron la comunicación y acceso a la información a personas con discapacidad visual"
+      },
+      {
+        "neg": 0,
+        "label": "Ayudas visuales y textuales que facilitaron la comunicación y acceso a la información a personas con discapacidad auditiva"
+      },
+      {
+        "neg": 0,
+        "label": "Talento humano capacitado o realizó convenios o alianzas con otras entidades en el canal presencial (Ej.: traductores e intérpretes de otras lenguas)"
+      },
+      {
+        "neg": 0,
+        "label": "Ejercicios de participación ciudadana que facilitaron el acceso y la comunicación con personas con discapacidad visual y auditiva"
+      },
+      {
+        "neg": 0,
+        "label": "Otros. ¿Cuáles?:"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "SEC223",
+    "text": "Para facilitar el acceso a las instalaciones e infraestructura física, acorde con la norma NTC 6047 la entidad contó con:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Controles de acceso de personas con un ancho de paso igual o mayor a 80 cm"
+      },
+      {
+        "neg": 0,
+        "label": "Un acceso con espacio libre de maniobra antes y después de la puerta de al menos 1,50 metros"
+      },
+      {
+        "neg": 0,
+        "label": "Un recorrido o sendero peatonal libre de obstáculos"
+      },
+      {
+        "neg": 0,
+        "label": "Señalización inclusiva. Especifique que tipos de señalización ha utilizado:"
+      },
+      {
+        "neg": 0,
+        "label": "Espacios de libre paso entre objetos o muebles con un mínimo de 80 cm de ancho para el tránsito de personas con discapacidad física o con movilidad reducida"
+      },
+      {
+        "neg": 0,
+        "label": "Baños públicos diseñados o acondicionados con baterías sanitarias para uso de personas con discapacidad"
+      },
+      {
+        "neg": 0,
+        "label": "Paraderos o estacionamientos para personas con discapacidad"
+      },
+      {
+        "neg": 0,
+        "label": "Anfitriones o talento humano que acompañe en el recorrido por la entidad a las personas con discapacidad, que lo soliciten"
+      },
+      {
+        "neg": 0,
+        "label": "Dispositivos tecnológicos para facilitar la movilidad de las personas con discapacidad en la entidad"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "SEC226",
+    "text": "En cumplimiento del artículo 17 de la Ley 2052, ¿la entidad creó la oficina, dependencia o grupo de trabajo de relacionamiento con las ciudadanías?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Parcialmente, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      },
+      {
+        "neg": 1,
+        "label": "A la entidad no le aplica el cumplimiento del artículo 17 de la Ley 2052 de 2020"
+      }
+    ]
+  },
+  {
+    "id": "SEC227",
+    "text": "La entidad cuenta con un líder para la implementación de la Política de Servicio a la Ciudadanía, en los casos en que no le aplica el artículo 17 de la Ley 2052 de 2020, y desarrolló las siguientes acciones:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Formular, implementar, hacer seguimiento y evaluar la Política de Servicio a la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Coordinar con otras dependencias y el área de planeación, las acciones de la Política de Servicio a la Ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Divulgar interna y externamente la oferta institucional, canales y escenarios de relacionamiento y toda información clave que facilite el ejercicio de derechos y cumplimiento de deberes ciudadanos"
+      },
+      {
+        "neg": 0,
+        "label": "Actualizar y simplificar los procesos, procedimientos y protocolos de servicio para fortalecer el relacionamiento con la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Gestionar las adecuaciones y mejoras de la infraestructura física, tecnológica, humana, financiera y administrativa, para fortalecer la interacción con la ciudadanía y sus grupos de valor"
+      },
+      {
+        "neg": 0,
+        "label": "Actualizar, verificar y usar la información en las herramientas o sistemas donde se registran los datos de atención a la ciudadanía, para realizar seguimiento a los servicios"
+      },
+      {
+        "neg": 0,
+        "label": "Hacer seguimiento, medición y evaluación de la experiencia ciudadana en los diferentes escenarios de relacionamiento con la entidad"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no cuenta con un líder de la implementación de la política de Servicio a la ciudadanía dependencia, área o grupo"
+      }
+    ]
+  }
+];
+
+function buildUI(){
+  const main=document.getElementById('mainContent');
+  main.innerHTML='';
+  questions.forEach(q=>{
+    const card=document.createElement('div');
+    card.className='card';
+    card.innerHTML=`
+      <div class="card-score-bar"><div class="card-score-fill" id="bar_${q.id}"></div></div>
+      <div class="card-header">
+        <span class="card-code">${q.id}</span>
+        <span class="card-question">${q.text}<span class="tipo-badge">${q.tipo}</span></span>
+      </div>
+      <div class="card-body" id="body_${q.id}"></div>
+    `;
+    const body=card.querySelector(`#body_${q.id}`);
+    q.options.forEach((opt,idx)=>{
+      const row=document.createElement('div');
+      row.className='option-row'+(opt.neg?' is-negative':'');
+      const cbId=`cb_${q.id}_${idx}`;
+      row.innerHTML=`
+        <div class="cb-wrap">
+          <input type="checkbox" id="${cbId}" data-q="${q.id}" data-neg="${opt.neg}" value="${opt.neg?0:POINTS_PER}">
+          <label class="cb-box" for="${cbId}"></label>
+        </div>
+        <div class="option-content">
+          <label class="option-label" for="${cbId}">
+            <span class="option-label-text ${opt.neg?'neg-label-text':''}">${opt.label}</span>
+            ${opt.neg===0?`<span class="status-badge status-bad" id="badge_${cbId}" style="display:none">Priorizar</span>`:''}
+          </label>
+          <input type="text" class="soporte-input" placeholder="Soporte / link / texto">
+        </div>
+      `;
+      body.appendChild(row);
+    });
+    main.appendChild(card);
+  });
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',actualizar));
+  actualizar();
+}
+
+function actualizar(){
+  calcular();actualizarEstados();actualizarProgress();
+}
+
+function calcular(){
+  let total=0;
+  const groups={};
+  document.querySelectorAll('input[type=checkbox]').forEach(ch=>{
+    const q=ch.dataset.q;
+    if(!groups[q])groups[q]=[];
+    groups[q].push(ch);
+  });
+  for(const q in groups){
+    const neg=groups[q].some(ch=>ch.checked&&ch.dataset.neg==='1');
+    if(neg)continue;
+    groups[q].forEach(ch=>{if(ch.checked)total+=parseFloat(ch.value);});
+  }
+  const fmt=total.toFixed(2);
+  document.getElementById('total').textContent=fmt;
+  document.getElementById('total2').textContent=fmt;
+  questions.forEach(q=>{
+    const g=groups[q.id]||[];
+    const neg=g.some(ch=>ch.checked&&ch.dataset.neg==='1');
+    let pts=0;
+    if(!neg)g.forEach(ch=>{if(ch.checked)pts+=parseFloat(ch.value);});
+    const max=q.options.filter(o=>o.neg===0).length*POINTS_PER;
+    const bar=document.getElementById(`bar_${q.id}`);
+    if(bar)bar.style.width=max>0?Math.min(100,(pts/max)*100)+'%':'0%';
+  });
+}
+
+function actualizarEstados(){
+  const touchedGroups={};
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    if(cb.checked)touchedGroups[cb.dataset.q]=true;
+  });
+  let checked=0,pending=0;
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    if(cb.dataset.neg==='1')return;
+    const badge=document.getElementById('badge_'+cb.id);
+    if(!badge)return;
+    const touched=touchedGroups[cb.dataset.q]||false;
+    if(cb.checked){
+      badge.textContent='Mantener y mejorar';
+      badge.className='status-badge status-ok';
+      badge.style.display='';
+      checked++;
+    } else if(touched){
+      badge.textContent='Priorizar';
+      badge.className='status-badge status-bad';
+      badge.style.display='';
+      pending++;
+    } else {
+      badge.style.display='none';
+    }
+  });
+  document.getElementById('checkedCount').textContent=checked;
+  document.getElementById('pendingCount').textContent=pending;
+}
+
+function actualizarProgress(){
+  const all=document.querySelectorAll('input[type=checkbox]');
+  let done=0;all.forEach(cb=>{if(cb.checked)done++;});
+  const pct=all.length>0?(done/all.length)*100:0;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressLabel').textContent=`${done} / ${all.length} opciones`;
+}
+
+function limpiar(){
+  document.querySelectorAll('input').forEach(i=>{
+    if(i.type==='checkbox')i.checked=false;
+    if(i.type==='text')i.value='';
+  });
+  actualizar();
+}
+
+function guardar() {
+  // Validar identificación
+  const nombre = (document.getElementById('ident_nombre')?.value || '').trim();
+  const dependencia = (document.getElementById('ident_dependencia')?.value || '').trim();
+  const vigencia = (document.getElementById('ident_vigencia')?.value || '').trim();
+  if (!nombre || !dependencia || !vigencia) {
+    const al = document.getElementById('identAlert');
+    if (al) { al.style.display = 'block'; setTimeout(()=>{ al.style.display='none'; }, 3500); }
+    return;
+  }
+
+  // Recoger respuestas
+  const data = [];
+  questions.forEach(q => {
+    const body = document.getElementById(`body_${q.id}`);
+    if (!body) return;
+    body.querySelectorAll('.option-row').forEach((row, idx) => {
+      const cb = row.querySelector('input[type=checkbox]');
+      const txt = row.querySelector('input[type=text]');
+      const badge = row.querySelector('.status-badge');
+      data.push({
+        pregunta: q.text,
+        codigo: q.id,
+        opcion: q.options[idx]?.label || '',
+        seleccionado: cb ? cb.checked : false,
+        soporte: txt ? txt.value : '',
+        estado: badge ? badge.textContent : ''
+      });
+    });
+  });
+
+  const puntaje = parseFloat(document.getElementById('total')?.textContent || '0');
+  const seleccionadas = parseInt(document.getElementById('checkedCount')?.textContent || '0');
+  const priorizar = parseInt(document.getElementById('pendingCount')?.textContent || '0');
+
+  const output = {
+    fecha_envio: new Date().toISOString(),
+    nombre_funcionario: nombre,
+    dependencia: dependencia,
+    vigencia: vigencia,
+    puntaje_total: puntaje,
+    total_seleccionadas: seleccionadas,
+    a_priorizar: priorizar,
+    respuestas: data
+  };
+
+  // 1. Enviar a Google Sheets via Apps Script
+  const SCRIPT_URL = 'REEMPLAZAR_CON_URL_DE_APPS_SCRIPT';
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(output)
+  }).then(() => {
+    const ok = document.getElementById('identSuccess');
+    if (ok) { ok.style.display = 'block'; setTimeout(()=>{ ok.style.display='none'; }, 4000); }
+  }).catch((err) => {
+    console.error('Error enviando a Sheets:', err);
+  });
+
+  // 2. Descargar JSON de respaldo
+
+  const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download='autodiagnostico_SEC.json';
+  a.click();
+}
+
+buildUI();
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'plan') renderPlan();
+}
+
+function getPlanItems() {
+  const rows = [];
+  questions.forEach(q => {
+    const body = document.getElementById('body_' + q.id);
+    if (!body) return;
+    const groupTouched = document.querySelector('input[data-q="' + q.id + '"]:checked');
+    if (!groupTouched) return;
+    body.querySelectorAll('.option-row').forEach((row, idx) => {
+      const cb = row.querySelector('input[type=checkbox]');
+      if (!cb || cb.dataset.neg === '1' || cb.checked) return;
+      rows.push({ qid: q.id, label: q.options[idx]?.label || '' });
+    });
+  });
+  return rows;
+}
+
+function updatePlanBadge() {
+  const badge = document.getElementById('planBadge');
+  if (!badge) return;
+  const n = getPlanItems().length;
+  badge.textContent = n;
+  badge.className = 'tab-badge' + (n === 0 ? ' zero' : '');
+}
+
+function renderPlan() {
+  updatePlanBadge();
+  const rows = getPlanItems();
+  const cont = document.getElementById('planContent');
+  if (!cont) return;
+  if (rows.length === 0) {
+    cont.innerHTML = '<div class="plan-empty"><div class="icon">✅</div>Sin ítems a priorizar todavía.<br>Complete el autodiagnóstico primero.</div>';
+    return;
+  }
+  let html = '<div class="plan-table-wrap"><table class="plan-table"><thead><tr><th>#</th><th>Código</th><th>Tema a Priorizar</th><th>Tarea a Realizar</th><th>Fecha Inicio</th><th>Fecha Final</th><th>Entregable</th><th>Responsable</th></tr></thead><tbody>';
+  rows.forEach((r, i) => {
+    const lbl = r.label.length > 90 ? r.label.substring(0, 90) + '…' : r.label;
+    html += `<tr><td style="text-align:center;color:var(--text-soft);font-weight:600">${i+1}</td><td><span class="code-pill">${r.qid}</span></td><td class="topic-cell">${lbl}</td><td><input type="text" id="pt_${i}_tarea" placeholder="Describir la tarea…"></td><td><input type="date" id="pt_${i}_inicio"></td><td><input type="date" id="pt_${i}_fin"></td><td><input type="text" id="pt_${i}_entregable" placeholder="Documento, informe…"></td><td><input type="text" id="pt_${i}_resp" placeholder="Nombre o cargo"></td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+
+function exportarPlan() {
+  const cont = document.getElementById('planContent');
+  if (!cont) return;
+  const filas = cont.querySelectorAll('tbody tr');
+  if (!filas.length) { alert('No hay ítems en el plan de trabajo.'); return; }
+  const plan = [];
+  filas.forEach((tr, i) => {
+    const tds = tr.querySelectorAll('td');
+    plan.push({ numero: i+1, codigo: tds[1]?.querySelector('.code-pill')?.textContent||'', tema: tds[2]?.textContent?.trim()||'', tarea: document.getElementById('pt_'+i+'_tarea')?.value||'', fecha_inicio: document.getElementById('pt_'+i+'_inicio')?.value||'', fecha_fin: document.getElementById('pt_'+i+'_fin')?.value||'', entregable: document.getElementById('pt_'+i+'_entregable')?.value||'', responsable: document.getElementById('pt_'+i+'_resp')?.value||'' });
+  });
+  const blob = new Blob([JSON.stringify({plan_de_trabajo: plan}, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan_de_trabajo.json'; a.click();
+}
+
+const _orig = actualizarFormulario;
+actualizarFormulario = function() { _orig(); updatePlanBadge(); };
+
+</script>
+</body>
+</html>
