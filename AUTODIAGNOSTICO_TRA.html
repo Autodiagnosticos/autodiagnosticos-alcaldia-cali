@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Autodiagnóstico TRA — Transparencia y Acceso a la Información</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+:root{
+  --navy:#0B2B5C;--navy-mid:#153D7A;--navy-light:#1E5299;
+  --gold:#C8A951;--gold-light:#F0D98A;
+  --surface:#F5F7FB;--card:#FFFFFF;--border:#DDE3EE;
+  --text:#1A2340;--text-soft:#5A6480;
+  --ok-bg:#E6F4EC;--ok-text:#1A6B3C;--ok-border:#7EC8A0;
+  --bad-bg:#FDF0EF;--bad-text:#B03020;--bad-border:#F4A89A;
+  --neg-bg:#F7F8FA;--neg-text:#8A94A6;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--surface);color:var(--text);line-height:1.5;}
+.header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);color:#fff;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(11,43,92,.3);}
+.header-inner{max-width:860px;margin:0 auto;padding:20px 24px 16px;display:flex;align-items:flex-start;gap:20px;}
+.header-icon{width:48px;height:48px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px;}
+.header-text{flex:1;}
+.header-text .eyebrow{font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--gold-light);text-transform:uppercase;margin-bottom:4px;}
+.header-text h1{font-size:17px;font-weight:700;line-height:1.3;color:#fff;}
+.header-text .subtitle{font-size:12px;color:rgba(255,255,255,.65);margin-top:3px;}
+.score-pill{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.22);border-radius:50px;padding:8px 16px;text-align:center;min-width:90px;flex-shrink:0;}
+.score-pill .score-val{font-size:22px;font-weight:700;color:var(--gold-light);line-height:1;}
+.score-pill .score-label{font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+.progress-bar-wrap{max-width:860px;margin:0 auto;padding:0 24px 12px;display:flex;align-items:center;gap:10px;}
+.progress-bar-track{flex:1;height:5px;background:rgba(255,255,255,.18);border-radius:99px;overflow:hidden;}
+.progress-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--gold-light),var(--gold));border-radius:99px;transition:width .4s ease;}
+.progress-label{font-size:10px;color:rgba(255,255,255,.55);white-space:nowrap;letter-spacing:.05em;}
+.main{max-width:860px;margin:0 auto;padding:28px 24px 60px;}
+.tipo-badge{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:99px;margin-left:8px;background:rgba(200,169,81,.18);color:var(--gold);border:1px solid rgba(200,169,81,.35);vertical-align:middle;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:18px;overflow:hidden;box-shadow:0 1px 4px rgba(11,43,92,.06);transition:box-shadow .2s;}
+.card:hover{box-shadow:0 4px 18px rgba(11,43,92,.1);}
+.card-score-bar{height:3px;background:var(--border);}
+.card-score-fill{height:100%;width:0%;background:var(--gold);transition:width .4s ease;}
+.card-header{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border);background:#FAFBFD;}
+.card-code{background:var(--navy);color:var(--gold-light);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:6px;white-space:nowrap;margin-top:1px;flex-shrink:0;}
+.card-question{font-size:13.5px;font-weight:600;color:var(--text);line-height:1.45;flex:1;}
+.card-body{padding:10px 0;}
+.option-row{display:flex;align-items:flex-start;padding:10px 20px;border-bottom:1px solid #F0F2F7;transition:background .15s;}
+.option-row:last-child{border-bottom:none;}
+.option-row:hover{background:#F5F7FB;}
+.option-row.is-negative{background:var(--neg-bg);}
+.option-row.is-negative:hover{background:#EEF0F5;}
+.cb-wrap{flex-shrink:0;margin-top:1px;}
+.cb-wrap input[type=checkbox]{display:none;}
+.cb-box{width:18px;height:18px;border:2px solid var(--border);border-radius:5px;background:#fff;display:flex;align-items:center;justify-content:center;transition:all .15s;cursor:pointer;flex-shrink:0;}
+.cb-wrap input:checked+.cb-box{background:var(--navy);border-color:var(--navy);}
+.cb-wrap input:checked+.cb-box::after{content:'';width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px);display:block;}
+.is-negative .cb-wrap input:checked+.cb-box{background:var(--neg-text);border-color:var(--neg-text);}
+.option-content{flex:1;display:flex;flex-direction:column;gap:6px;padding-left:12px;}
+.option-label{font-size:13px;color:var(--text);line-height:1.45;cursor:pointer;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.option-label-text{flex:1;}
+.status-badge{font-size:10px;font-weight:600;letter-spacing:.06em;padding:2px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0;text-transform:uppercase;}
+.status-ok{background:var(--ok-bg);color:var(--ok-text);border:1px solid var(--ok-border);}
+.status-bad{background:var(--bad-bg);color:var(--bad-text);border:1px solid var(--bad-border);}
+.soporte-input{width:100%;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-family:inherit;font-size:12px;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s;}
+.soporte-input::placeholder{color:#AEBACF;}
+.soporte-input:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(30,82,153,.12);background:#fff;}
+.is-negative .soporte-input{background:var(--neg-bg);}
+.neg-label-text{color:var(--neg-text);font-style:italic;}
+.actions{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border:none;border-radius:9px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;}
+.btn-primary{background:var(--navy);color:#fff;box-shadow:0 2px 8px rgba(11,43,92,.3);}
+.btn-primary:hover{background:var(--navy-light);transform:translateY(-1px);}
+.btn-secondary{background:#fff;color:var(--text-soft);border:1.5px solid var(--border);}
+.btn-secondary:hover{background:var(--surface);border-color:#B0BAD0;}
+.btn svg{width:15px;height:15px;}
+.summary-bar{position:fixed;bottom:0;left:0;right:0;background:var(--navy);border-top:2px solid var(--gold);padding:10px 24px;display:flex;align-items:center;justify-content:center;gap:32px;z-index:90;box-shadow:0 -4px 20px rgba(11,43,92,.25);}
+.stat-item{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.8);font-size:12px;}
+.stat-val{font-size:16px;font-weight:700;color:var(--gold-light);}
+.stat-divider{width:1px;height:30px;background:rgba(255,255,255,.15);}
+
+  /* ── CONSULTOR en progress-bar ── */
+  .progress-bar-wrap {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .consultant-info {
+    margin-left: auto;
+    text-align: right;
+    line-height: 1.35;
+    flex-shrink: 0;
+  }
+  .consultant-info .ci-name  { font-size: 11px; font-weight: 700; color: var(--gold-light); display: block; white-space: nowrap; }
+  .consultant-info .ci-role  { font-size: 10px; color: rgba(255,255,255,0.75); display: block; }
+  .consultant-info .ci-contact { font-size: 9.5px; color: rgba(255,255,255,0.55); display: block; }
+
+  /* ── TABS ── */
+  .tab-nav {
+    max-width: 860px; margin: 0 auto;
+    padding: 14px 24px 0;
+    display: flex; gap: 6px;
+    background: var(--surface);
+  }
+  .tab-btn {
+    padding: 9px 20px;
+    border: 1.5px solid var(--border); border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    background: #E8ECF5; color: var(--text-soft);
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .tab-btn.active { background: var(--card); color: var(--navy); border-color: var(--border); box-shadow: 0 -2px 8px rgba(11,43,92,0.07); }
+  .tab-btn:hover:not(.active) { background: #D8DDED; }
+  .tab-badge { background: var(--bad-bg); color: var(--bad-text); border: 1px solid var(--bad-border); font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 99px; }
+  .tab-badge.zero { background: #eee; color: #aaa; border-color: #ddd; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── PLAN DE TRABAJO ── */
+  .plan-wrap { max-width: 860px; margin: 0 auto; padding: 28px 24px 80px; }
+  .plan-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .plan-title { font-size: 16px; font-weight: 700; color: var(--navy); }
+  .plan-subtitle { font-size: 12px; color: var(--text-soft); margin-top: 2px; }
+  .plan-empty { text-align: center; padding: 60px 20px; color: var(--text-soft); font-size: 13px; }
+  .plan-empty .icon { font-size: 40px; margin-bottom: 12px; }
+  .plan-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  .plan-table { width: 100%; border-collapse: collapse; font-size: 12px; background: var(--card); }
+  .plan-table th { background: var(--navy); color: #fff; padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; white-space: nowrap; }
+  .plan-table th:first-child { border-radius: 12px 0 0 0; }
+  .plan-table th:last-child  { border-radius: 0 12px 0 0; }
+  .plan-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .plan-table tr:last-child td { border-bottom: none; }
+  .plan-table tr:nth-child(even) td { background: var(--surface); }
+  .plan-table .topic-cell { font-weight: 500; color: var(--navy); max-width: 220px; }
+  .plan-table .code-pill { font-size: 10px; font-weight: 700; background: var(--navy); color: #fff; padding: 2px 7px; border-radius: 99px; display: inline-block; margin-bottom: 4px; }
+  .plan-table input[type=text], .plan-table input[type=date] { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-family: inherit; font-size: 11px; color: var(--text); background: #fff; outline: none; }
+  .plan-table input:focus { border-color: var(--focus); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+  .btn-export-plan { background: var(--gold); color: var(--navy); border: none; border-radius: 8px; padding: 9px 18px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .btn-export-plan:hover { background: var(--gold-light); }
+
+
+  /* ── BANNER IDENTIFICACIÓN ── */
+  .ident-banner {
+    background: linear-gradient(135deg, #0B2B5C 0%, #153D7A 100%);
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    box-shadow: 0 3px 20px rgba(11,43,92,0.35);
+  }
+  .ident-inner {
+    max-width: 860px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+  }
+  .ident-field {
+    display: flex; flex-direction: column; flex: 1; min-width: 160px;
+  }
+  .ident-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.55); text-transform: uppercase; margin-bottom: 4px;
+  }
+  .ident-input {
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 7px;
+    padding: 7px 11px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 12px; color: #fff;
+    outline: none; width: 100%;
+  }
+  .ident-input::placeholder { color: rgba(255,255,255,0.35); }
+  .ident-input:focus { border-color: #C8A951; background: rgba(255,255,255,0.15); }
+  .ident-required { color: #F0D98A; }
+  .ident-alert {
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #B03020; color: #fff; border-radius: 10px;
+    padding: 12px 24px; font-size: 13px; font-weight: 600;
+    z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s;
+  }
+  .ident-success {
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #1A6B3C; color: #fff; border-radius: 10px;
+    padding: 12px 24px; font-size: 13px; font-weight: 600;
+    z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s;
+  }
+  @keyframes fadeIn { from { opacity:0; top:10px; } to { opacity:1; top:20px; } }
+
+</style>
+</head>
+<body>
+
+<!-- BANNER IDENTIFICACIÓN -->
+<div class="ident-banner">
+  <div class="ident-inner">
+    <div class="ident-field">
+      <span class="ident-label">Nombre completo <span class="ident-required">*</span></span>
+      <input class="ident-input" type="text" id="ident_nombre" placeholder="Funcionario que diligencia…">
+    </div>
+    <div class="ident-field">
+      <span class="ident-label">Dependencia / Área <span class="ident-required">*</span></span>
+      <input class="ident-input" type="text" id="ident_dependencia" placeholder="Secretaría, Despacho, Área…">
+    </div>
+    <div class="ident-field" style="max-width:120px;min-width:100px">
+      <span class="ident-label">Vigencia <span class="ident-required">*</span></span>
+      <input class="ident-input" type="number" id="ident_vigencia" placeholder="2024" min="2020" max="2030">
+    </div>
+  </div>
+</div>
+<div class="ident-alert" id="identAlert">⚠️ Complete Nombre, Dependencia y Vigencia antes de guardar.</div>
+<div class="ident-success" id="identSuccess">✅ Respuestas enviadas correctamente a Google Sheets.</div>
+<!-- FIN BANNER -->
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-icon">🔍</div>
+    <div class="header-text">
+      <div class="eyebrow">Función Pública · Índice TRA · Transparencia y Acceso a la Información</div>
+      <h1>Autodiagnóstico de Transparencia y Acceso a la Información Pública</h1>
+      <div class="subtitle">Marque las opciones que aplican y registre el soporte correspondiente</div>
+    </div>
+    <div class="score-pill">
+      <div class="score-val" id="total">0</div>
+      <div class="score-label">Puntos</div>
+    </div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">0 / 0 opciones</div>
+      <div class="consultant-info">
+        <span class="ci-name">Ilder Luis Palta Velasco</span>
+        <span class="ci-role">Consultor Organizacional</span>
+        <span class="ci-contact">📱 317 297 1922 · ✉️ luispalta@gmail.com</span>
+      </div>
+  </div>
+</div>
+<div class="tab-nav">
+  <button class="tab-btn active" id="tab-diag" onclick="switchTab('diag')">📋 Autodiagnóstico</button>
+  <button class="tab-btn" id="tab-plan" onclick="switchTab('plan')">🗂️ Plan de Trabajo <span class="tab-badge zero" id="planBadge">0</span></button>
+</div>
+<div class="tab-panel active" id="panel-diag">
+<div class="main" id="mainContent"></div>
+</div><!-- cierre panel-diag -->
+
+<div class="tab-panel" id="panel-plan">
+  <div class="plan-wrap">
+    <div class="plan-header-row">
+      <div>
+        <div class="plan-title">🗂️ Plan de Trabajo</div>
+        <div class="plan-subtitle">Opciones marcadas como <strong>Priorizar</strong> — complete fechas, entregable y responsable</div>
+      </div>
+      <button class="btn-export-plan" onclick="exportarPlan()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar Plan (JSON)
+      </button>
+    </div>
+    <div id="planContent">
+      <div class="plan-empty"><div class="icon">✅</div>Sin ítems a priorizar.<br>Complete el autodiagnóstico primero.</div>
+    </div>
+  </div>
+</div>
+
+<div class="main" style="padding-top:0">
+  <div class="actions">
+    <button class="btn btn-primary" onclick="guardar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Guardar resultado
+    </button>
+    <button class="btn btn-secondary" onclick="limpiar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
+      Limpiar todo
+    </button>
+  </div>
+</div>
+<div class="summary-bar">
+  <div class="stat-item"><span>Puntaje total:</span><span class="stat-val" id="total2">0</span><span>pts</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat-item"><span>Seleccionadas:</span><span class="stat-val" id="checkedCount">0</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat-item"><span>A priorizar:</span><span class="stat-val" id="pendingCount">0</span></div>
+</div>
+<script>
+const POINTS_PER = 0.6896551724;
+const questions = [
+  {
+    "id": "TRA207",
+    "text": "Según su Política Institucional de Gestión del Riesgo, ¿cuántos riesgos de corrupción tiene identificados la entidad?",
+    "tipo": "Abierta numérica",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Registre el valor:"
+      }
+    ]
+  },
+  {
+    "id": "TRA208",
+    "text": "Según su Política Institucional de Gestión del Riesgo, ¿cuáles de los siguientes componentes tuvo en cuenta la entidad para la identificación de riesgos asociados a posibles actos de corrupción?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Falta de controles internos y externos efectivos en los procesos y procedimientos, necesarios para el desarrollo de la gestión (Oportunidad)"
+      },
+      {
+        "neg": 0,
+        "label": "Fallas éticas y de compromiso con lo público que afectan un desarrollo objetivo e imparcial en el manejo y regulación de los recursos públicos (Responsabilidad)"
+      },
+      {
+        "neg": 0,
+        "label": "Factores internos que afectan las conductas de integridad pública y propician riesgos de corrupción, como sería la trayectoria socioeconómica, ética y educativa del servidor que inciden en las decisiones (Presión)"
+      },
+      {
+        "neg": 0,
+        "label": "Factores externos que afectan las conductas de integridad pública y propician riesgos de corrupción, como sería el contexto del mercado y variables culturales que se manifiestan en ofrecimiento de dádivas por acción u omisión de los servidores públicos provenientes de carteles de contratistas o grupos legales e ilegales (Presión)"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "TRA209",
+    "text": "Según su Política Institucional de Gestión del Riesgo, para la identificación de los riesgos de corrupción la entidad incluyó:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Causa"
+      },
+      {
+        "neg": 0,
+        "label": "Probabilidad"
+      },
+      {
+        "neg": 0,
+        "label": "Impacto con enfoque de derechos fundamentales"
+      },
+      {
+        "neg": 0,
+        "label": "Nivel de severidad"
+      },
+      {
+        "neg": 0,
+        "label": "Controles asociados"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguno de los anteriores"
+      }
+    ]
+  },
+  {
+    "id": "TRA210",
+    "text": "Según su Política Institucional de Gestión del Riesgo, ¿cuáles de las siguientes causas fueron analizadas por la entidad en la vigencia evaluada para la identificación de riesgos asociados a posibles actos de corrupción?:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Procesos que involucran trámites que implican manejo de dinero en efectivo"
+      },
+      {
+        "neg": 0,
+        "label": "Falta de segregación de funciones por restricciones de planta"
+      },
+      {
+        "neg": 0,
+        "label": "Discrecionalidad para la gestión de trámites y servicios (sin protocolos o procedimientos de atención)"
+      },
+      {
+        "neg": 0,
+        "label": "Arqueos de caja adelantados por personal no idóneo y sin la autoridad requerida (adelantada por el mismo servidor o bien por otro servidor que no cuenta con un nivel jerárquico superior)"
+      },
+      {
+        "neg": 0,
+        "label": "Gestión Documental con fondos acumulados que no garantizan los registros y memoria institucional"
+      },
+      {
+        "neg": 0,
+        "label": "Fases de análisis de los requisitos con excesiva reserva que impida la transparencia en determinado proceso"
+      },
+      {
+        "neg": 0,
+        "label": "Fallas en el apoyo jurídico interno que generan interpretación subjetiva de las normas o reglamentos"
+      },
+      {
+        "neg": 0,
+        "label": "Factores externos de presión en temas regulados que pueden incidir en las decisiones institucionales"
+      },
+      {
+        "neg": 0,
+        "label": "Servidores con conflictos de interés en los temas sobre los cuales pueden incidir con su toma de decisiones"
+      },
+      {
+        "neg": 0,
+        "label": "Falta de inclusión de acuerdos de confidencialidad y manejo de información interna que facilita su divulgación y uso no autorizado de información privilegiada"
+      },
+      {
+        "neg": 0,
+        "label": "Falta de herramientas tecnológicas para la transmisión de datos e información entre procesos y a nivel externo"
+      },
+      {
+        "neg": 0,
+        "label": "Inexistencia de archivos contables"
+      },
+      {
+        "neg": 0,
+        "label": "Discrecionalidad para la toma de decisiones en grupos restringidos de servidores"
+      },
+      {
+        "neg": 0,
+        "label": "Ausencia de publicación de los procesos precontractuales, contractuales o postcontractuales en Secop I y II"
+      },
+      {
+        "neg": 0,
+        "label": "Ausencia o debilidad de medidas y/o políticas para la identificación y manejo de conflictos de interés"
+      },
+      {
+        "neg": 0,
+        "label": "Ausencia de sistemas de información, que pueden facilitar el acceso a información y su posible manipulación o adulteración"
+      },
+      {
+        "neg": 0,
+        "label": "Otros. ¿Cuáles?:n tramites y servicios"
+      }
+    ]
+  },
+  {
+    "id": "TRA211",
+    "text": "Seleccione los procesos sobre los cuáles la entidad ha identificado riesgos de corrupción:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Apoyo"
+      },
+      {
+        "neg": 0,
+        "label": "Estratégicos"
+      },
+      {
+        "neg": 0,
+        "label": "Misionales"
+      },
+      {
+        "neg": 0,
+        "label": "Evaluación"
+      },
+      {
+        "neg": 0,
+        "label": "Otros. ¿Cuáles?:"
+      }
+    ]
+  },
+  {
+    "id": "TRA212",
+    "text": "Según su Política Institucional de Gestión del Riesgo, durante la vigencia evaluada, ¿Cuántos riesgos de corrupción se materializaron?",
+    "tipo": "Abierta numérica",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Registre el valor:"
+      }
+    ]
+  },
+  {
+    "id": "TRA213",
+    "text": "Los riesgos de corrupción materializados se pusieron en conocimiento de las siguientes autoridades:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Fiscalía"
+      },
+      {
+        "neg": 0,
+        "label": "Contraloría"
+      },
+      {
+        "neg": 0,
+        "label": "Procuraduría"
+      },
+      {
+        "neg": 0,
+        "label": "Control interno"
+      },
+      {
+        "neg": 0,
+        "label": "Otra autoridad. ¿Cuál?:"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "TRA214",
+    "text": "Según su Política Institucional de Gestión del Riesgo, los controles definidos por la entidad para mitigar los riesgos de corrupción incluyeron:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Responsable del control"
+      },
+      {
+        "neg": 0,
+        "label": "Propósito del control"
+      },
+      {
+        "neg": 0,
+        "label": "Frecuencia del control"
+      },
+      {
+        "neg": 0,
+        "label": "Descripción detallada de la operación del control"
+      },
+      {
+        "neg": 0,
+        "label": "Manejo de las desviaciones del control"
+      },
+      {
+        "neg": 0,
+        "label": "Evidencia del control"
+      },
+      {
+        "neg": 1,
+        "label": "No se han definido controles"
+      }
+    ]
+  },
+  {
+    "id": "TRA215",
+    "text": "Según su Política Institucional de Gestión del Riesgo, ¿la entidad formuló planes de tratamiento para fortalecer los controles identificados como moderados y débiles?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "TRA216",
+    "text": "¿La entidad ajustó el mapa de riesgos de corrupción por la materialización de estos?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "TRA218",
+    "text": "Atendiendo a los principios que fundamentan la transparencia pasiva, ¿las respuestas que la entidad dio a los derechos de petición de documentos e información hechos por los ciudadanos, se hicieron dentro de los términos legales establecidos, fueron completas, veraces y objetivas, se entregaron en formatos adecuados y prácticos de usar, que permiten al ciudadano o usuario encontrar fácilmente su respuesta?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Parcialmente, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "TRA219",
+    "text": "Atendiendo al principio de divulgación proactiva de la información, la información que publica la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Cumple con los estándares y lineamientos contenidos en la \"Guía  de lenguaje  claro para servidores públicos en Colombia\",  de acuerdo con el  Programa Nacional de Servicio al Ciudadano del Departamento Nacional de Planeación"
+      },
+      {
+        "neg": 0,
+        "label": "Cumple y garantiza los criterios de accesibilidad para personas con capacidad visual reducida  o  ciegos, según los criterios de la Resolución 1519 de 2020 del Ministerio de Tecnologías de la información y las Comunicaciones"
+      },
+      {
+        "neg": 0,
+        "label": "Cumple y garantiza los criterios de accesibilidad para personas con capacidad auditiva reducida  o sorda, según los criterios de la Resolución 1519 de 2020 del Ministerio de Tecnologías de la información y las Comunicaciones"
+      },
+      {
+        "neg": 0,
+        "label": "Se encuentra disponible para personas con discapacidad psicosocial (mental) o intelectual (Ej.: contenidos de lectura fácil, con un cuerpo de letra mayor, vídeos sencillos con ilustraciones, audio de fácil comprensión, descripción de tablas e imágenes gráficas)"
+      },
+      {
+        "neg": 0,
+        "label": "Se encuentra  traducida a otras lenguas, idiomas o dialectos"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "TRA220",
+    "text": "Para garantizar el acceso a la información de personas con discapacidad, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Apropia normas técnicas nacionales o internaciones que mejoran la accesibilidad de sus archivos electrónicos"
+      },
+      {
+        "neg": 0,
+        "label": "Envía las comunicaciones o repuestas a sus grupos de valor en un formato que garantiza su preservación digital a largo plazo y que a su vez es accesible (PDF/A-1b o PDF/A1a)"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "TRA221",
+    "text": "La entidad garantiza el derecho de acceso a la información pública aplicando los siguientes principios (Ley 1712 de 2014):",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Principio de máxima publicidad"
+      },
+      {
+        "neg": 0,
+        "label": "Principio de transparencia"
+      },
+      {
+        "neg": 0,
+        "label": "Principio de buena fe"
+      },
+      {
+        "neg": 0,
+        "label": "Principio de facilitación"
+      },
+      {
+        "neg": 0,
+        "label": "Principio de no discriminación"
+      },
+      {
+        "neg": 0,
+        "label": "Principio de gratuidad"
+      },
+      {
+        "neg": 0,
+        "label": "Principio de celeridad"
+      },
+      {
+        "neg": 0,
+        "label": "Principio de eficacia"
+      },
+      {
+        "neg": 0,
+        "label": "Principio de la calidad de la información"
+      },
+      {
+        "neg": 0,
+        "label": "Principio de la divulgación proactiva de la información"
+      },
+      {
+        "neg": 0,
+        "label": "Principio de responsabilidad en el uso de la información"
+      },
+      {
+        "neg": 1,
+        "label": "No se aplican estos principios"
+      }
+    ]
+  },
+  {
+    "id": "TRA222",
+    "text": "Respecto al informe sobre acceso a información, quejas y reclamos, durante la vigencia evaluada, la entidad lo elaboró:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 1,
+        "label": "No se elaboró el informe trimestral sobre acceso a información, quejas y reclamos"
+      },
+      {
+        "neg": 0,
+        "label": "Una vez al año"
+      },
+      {
+        "neg": 0,
+        "label": "Dos veces al año"
+      },
+      {
+        "neg": 0,
+        "label": "Tres veces al año"
+      },
+      {
+        "neg": 0,
+        "label": "Cuatro veces al año"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no tiene conocimiento en relación a la elaboración de un informe sobre acceso a la información, quejas y reclamos"
+      }
+    ]
+  },
+  {
+    "id": "TRA223",
+    "text": "Señale los requisitos sobre menú destacado, establecidos en el anexo 2 de la Resolución 1519 de 2020, que cumplió la Sede Electrónica de la entidad durante la vigencia evaluada:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Incluyó el menú \"Transparencia y acceso a la información pública\". Ingrese la URL o enlace:"
+      },
+      {
+        "neg": 0,
+        "label": "Incluyó el menú \"Atención y servicio a la ciudadanía\". Ingrese la URL o enlace:"
+      },
+      {
+        "neg": 0,
+        "label": "Incluyó el menú \"Participa\". Ingrese la URL o enlace:"
+      },
+      {
+        "neg": 0,
+        "label": "Sección de noticias"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguno de los anteriores. Describa la razón:"
+      }
+    ]
+  },
+  {
+    "id": "TRA224",
+    "text": "Atendiendo al principio de divulgación proactiva de la información, la entidad publica en la sección transparencia y acceso a la información pública de su portal web oficial información actualizada sobre:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Misión, visión, funciones y deberes de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Organigrama de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Mapas y cartas descriptivas de los procesos"
+      },
+      {
+        "neg": 0,
+        "label": "Localización física, sucursales o regionales, horarios y días de atención al público. Debe incluir datos de contacto"
+      },
+      {
+        "neg": 0,
+        "label": "Directorio de información de servidores públicos, empleados y contratistas que incluya el cargo, direcciones de correo electrónico, teléfono y escalas salariales"
+      },
+      {
+        "neg": 0,
+        "label": "Directorio de entidades del sector, agremiaciones, asociaciones, entidades del sector, grupos étnicos y otros grupos de interés"
+      },
+      {
+        "neg": 0,
+        "label": "Mecanismos para interponer PQRSD"
+      },
+      {
+        "neg": 0,
+        "label": "Calendario de actividades"
+      },
+      {
+        "neg": 0,
+        "label": "Mecanismos internos y externos de supervisión, notificación y vigilancia"
+      },
+      {
+        "neg": 0,
+        "label": "Normatividad general y reglamentaria"
+      },
+      {
+        "neg": 0,
+        "label": "Políticas y lineamientos o manuales"
+      },
+      {
+        "neg": 0,
+        "label": "Plan Anual de Adquisiciones junto con las modificaciones que se realicen"
+      },
+      {
+        "neg": 0,
+        "label": "Publicación de la información contractual"
+      },
+      {
+        "neg": 0,
+        "label": "Ejecución de los contratos"
+      },
+      {
+        "neg": 0,
+        "label": "Procedimientos, lineamientos en materia de adquisiciones y compras, así como todos los datos de adjudicación y ejecución de contratos, incluidos concursos y licitaciones"
+      },
+      {
+        "neg": 0,
+        "label": "Presupuesto general de gastos, ingresos e inversión"
+      },
+      {
+        "neg": 0,
+        "label": "Ejecución presupuestal. Publicar la información de la ejecución presupuestal aprobada y ejecutada de ingresos y gastos anuales"
+      },
+      {
+        "neg": 0,
+        "label": "Plan de Acción Anual"
+      },
+      {
+        "neg": 0,
+        "label": "Proyectos de inversión en ejecución"
+      },
+      {
+        "neg": 0,
+        "label": "Informes de empalme"
+      },
+      {
+        "neg": 0,
+        "label": "Informes de gestión, evaluación y auditoría"
+      },
+      {
+        "neg": 0,
+        "label": "Informes de Rendición de Cuentas"
+      },
+      {
+        "neg": 0,
+        "label": "Informes sobre la implementación de acciones en el marco de los Acuerdos de Paz"
+      },
+      {
+        "neg": 0,
+        "label": "Planes de Mejoramiento (de organismos de control, internos y derivados de ejercicios de rendición de cuentas)"
+      },
+      {
+        "neg": 0,
+        "label": "Informe de solicitudes de acceso a la información, quejas y reclamos"
+      },
+      {
+        "neg": 0,
+        "label": "La totalidad de los trámites que ofrece al ciudadano (señalando la norma que los sustenta, procedimientos, costos, formatos y formularios requeridos)"
+      },
+      {
+        "neg": 0,
+        "label": "Mecanismos para la participación de los ciudadanos, grupos de valor o grupos de interés en la formulación de políticas"
+      },
+      {
+        "neg": 0,
+        "label": "Registro de Activos de Información"
+      },
+      {
+        "neg": 0,
+        "label": "Índice de Información Clasificada y Reservada"
+      },
+      {
+        "neg": 0,
+        "label": "Esquema de Publicación de Información"
+      },
+      {
+        "neg": 0,
+        "label": "Programa de Gestión Documental"
+      },
+      {
+        "neg": 0,
+        "label": "Tablas de Retención Documental"
+      },
+      {
+        "neg": 0,
+        "label": "Datos abiertos, para lo cual deberán contemplar las excepciones establecidas en el título 3 de la presente ley"
+      },
+      {
+        "neg": 0,
+        "label": "Información específica para grupos de interés"
+      },
+      {
+        "neg": 0,
+        "label": "Políticas de seguridad de la información del sitio web y protección de datos personales"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "TRA225",
+    "text": "Atendiendo al principio de divulgación proactiva de la información, la entidad publica en el menú Atención y servicio a la ciudadanía de su Sede Electrónica información actualizada sobre:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Trámites, Otros Procedimientos Administrativos (OPAS) y consultas de acceso a información pública (CAIP)"
+      },
+      {
+        "neg": 0,
+        "label": "Canales de atención y pida una cita"
+      },
+      {
+        "neg": 0,
+        "label": "Formulario de PQRSD (peticiones, quejas, reclamos, solicitudes de información pública y denuncias)"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "TRA226",
+    "text": "Atendiendo al principio de divulgación proactiva de la información, la entidad publica en el Menú participa de su Sede Electrónica información actualizada sobre:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Participación para el diagnóstico e identificación de problemas"
+      },
+      {
+        "neg": 0,
+        "label": "Planeación y presupuesto participativo"
+      },
+      {
+        "neg": 0,
+        "label": "Consulta ciudadana"
+      },
+      {
+        "neg": 0,
+        "label": "Colaboración e innovación"
+      },
+      {
+        "neg": 0,
+        "label": "Rendición de cuentas"
+      },
+      {
+        "neg": 0,
+        "label": "Control social"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguno de los anteriores"
+      }
+    ]
+  },
+  {
+    "id": "TRA227",
+    "text": "¿La entidad incluyó en su planeación presupuestal recursos para garantizar el derecho de acceso a la información pública y la transparencia?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "TRA228",
+    "text": "¿La entidad contó con un procedimiento para garantizar el acceso a la información pública con criterio diferencial a la población étnica que habla lenguas distintas al castellano?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      },
+      {
+        "neg": 1,
+        "label": "Dentro de la caracterización de los grupos de valor y de interés realizada por la entidad, no se ha identificado población étnica que habla lenguas distintas al castellano"
+      }
+    ]
+  },
+  {
+    "id": "TRA229",
+    "text": "¿La entidad implementa las directrices de accesibilidad web dispuestas en la resolución 1519 de 2020 anexo 1?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No implementa las directrices de accesibilidad web"
+      }
+    ]
+  },
+  {
+    "id": "TRA230",
+    "text": "La entidad ha diseñado los siguientes instrumentos de gestión de la información pública:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Tablas de Retención Documental"
+      },
+      {
+        "neg": 0,
+        "label": "Índice de Información Clasificada y Reservada"
+      },
+      {
+        "neg": 0,
+        "label": "Registro de Activos de Información"
+      },
+      {
+        "neg": 0,
+        "label": "Esquema de Publicación de Información"
+      },
+      {
+        "neg": 0,
+        "label": "Programa de Gestión Documental"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "TRA231",
+    "text": "El evento de materialización de los riesgos de corrupción se puso en conocimiento de las entidades seleccionadas con la siguiente frecuencia:",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Una vez"
+      },
+      {
+        "neg": 0,
+        "label": "Mas de una vez"
+      }
+    ]
+  },
+  {
+    "id": "TRA234",
+    "text": "¿La entidad implementó las modificaciones que introdujo la Ley 2195 de 2022 y el Decreto 1122 de 2024, en lo que tiene que ver con la transición a Programas de Transparencia y Ética Pública?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "TRA235",
+    "text": "De acuerdo con lo establecido en la Ley 2195 de 2022, y el Decreto 1122 de 2024, sobre el ámbito de aplicación de los Programas de Transparencia y Ética, ¿su entidad está obligada a implementar un programa Público o Empresarial?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Programa de Transparencia y Ética Pública"
+      },
+      {
+        "neg": 0,
+        "label": "Programa de Transparencia y Ética Empresarial"
+      },
+      {
+        "neg": 1,
+        "label": "No tiene conocimiento del tema"
+      }
+    ]
+  },
+  {
+    "id": "TRA236",
+    "text": "¿La entidad cuenta con un Programa de Transparencia y Ética aprobado y publicado?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, el Programa fue aprobado por la Alta Dirección y se encuentra publicado en la página web de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "El Programa fue aprobado por la Alta Dirección, pero no se ha publicado"
+      },
+      {
+        "neg": 1,
+        "label": "No, aún no se cuenta con un Programa de Transparencia y Ética"
+      }
+    ]
+  },
+  {
+    "id": "TRA237",
+    "text": "Para la vigencia 2026, ¿la entidad formuló algún plan de transición que le permitiera implementar el Programa de Transparencia y Ética Pública?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí"
+      },
+      {
+        "neg": 0,
+        "label": "si"
+      }
+    ]
+  },
+  {
+    "id": "TRA238",
+    "text": "¿Cuáles de las etapas del ciclo del Programa de Transparencia y Ética Pública desarrolló la entidad durante la vigencia 2026?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Formulación"
+      },
+      {
+        "neg": 0,
+        "label": "Validación"
+      },
+      {
+        "neg": 0,
+        "label": "Consolidación"
+      },
+      {
+        "neg": 0,
+        "label": "Aprobación"
+      },
+      {
+        "neg": 0,
+        "label": "Publicación"
+      },
+      {
+        "neg": 0,
+        "label": "Ejecución"
+      }
+    ]
+  },
+  {
+    "id": "TRA239",
+    "text": "¿Cuáles de las siguientes herramientas ha utilizado la entidad para el proceso de implementación del Programa de Transparencia y Ética Pública?:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Asistencia técnica de la Secretaría de Transparencia de la Presidencia de la República"
+      },
+      {
+        "neg": 0,
+        "label": "Capacitaciones virtuales"
+      },
+      {
+        "neg": 0,
+        "label": "Manuales y guías"
+      },
+      {
+        "neg": 0,
+        "label": "Diagnósticos"
+      }
+    ]
+  }
+];
+
+function buildUI(){
+  const main=document.getElementById('mainContent');
+  main.innerHTML='';
+  questions.forEach(q=>{
+    const card=document.createElement('div');
+    card.className='card';
+    card.innerHTML=`
+      <div class="card-score-bar"><div class="card-score-fill" id="bar_${q.id}"></div></div>
+      <div class="card-header">
+        <span class="card-code">${q.id}</span>
+        <span class="card-question">${q.text}<span class="tipo-badge">${q.tipo}</span></span>
+      </div>
+      <div class="card-body" id="body_${q.id}"></div>
+    `;
+    const body=card.querySelector(`#body_${q.id}`);
+    q.options.forEach((opt,idx)=>{
+      const row=document.createElement('div');
+      row.className='option-row'+(opt.neg?' is-negative':'');
+      const cbId=`cb_${q.id}_${idx}`;
+      row.innerHTML=`
+        <div class="cb-wrap">
+          <input type="checkbox" id="${cbId}" data-q="${q.id}" data-neg="${opt.neg}" value="${opt.neg?0:POINTS_PER}">
+          <label class="cb-box" for="${cbId}"></label>
+        </div>
+        <div class="option-content">
+          <label class="option-label" for="${cbId}">
+            <span class="option-label-text ${opt.neg?'neg-label-text':''}">${opt.label}</span>
+            ${opt.neg===0?`<span class="status-badge status-bad" id="badge_${cbId}" style="display:none">Priorizar</span>`:''}
+          </label>
+          <input type="text" class="soporte-input" placeholder="Soporte / link / texto">
+        </div>
+      `;
+      body.appendChild(row);
+    });
+    main.appendChild(card);
+  });
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',actualizar));
+  actualizar();
+}
+
+function actualizar(){
+  calcular();actualizarEstados();actualizarProgress();
+}
+
+function calcular(){
+  let total=0;
+  const groups={};
+  document.querySelectorAll('input[type=checkbox]').forEach(ch=>{
+    const q=ch.dataset.q;
+    if(!groups[q])groups[q]=[];
+    groups[q].push(ch);
+  });
+  for(const q in groups){
+    const neg=groups[q].some(ch=>ch.checked&&ch.dataset.neg==='1');
+    if(neg)continue;
+    groups[q].forEach(ch=>{if(ch.checked)total+=parseFloat(ch.value);});
+  }
+  const fmt=total.toFixed(2);
+  document.getElementById('total').textContent=fmt;
+  document.getElementById('total2').textContent=fmt;
+  questions.forEach(q=>{
+    const g=groups[q.id]||[];
+    const neg=g.some(ch=>ch.checked&&ch.dataset.neg==='1');
+    let pts=0;
+    if(!neg)g.forEach(ch=>{if(ch.checked)pts+=parseFloat(ch.value);});
+    const max=q.options.filter(o=>o.neg===0).length*POINTS_PER;
+    const bar=document.getElementById(`bar_${q.id}`);
+    if(bar)bar.style.width=max>0?Math.min(100,(pts/max)*100)+'%':'0%';
+  });
+}
+
+function actualizarEstados(){
+  const touchedGroups={};
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    if(cb.checked)touchedGroups[cb.dataset.q]=true;
+  });
+  let checked=0,pending=0;
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    if(cb.dataset.neg==='1')return;
+    const badge=document.getElementById('badge_'+cb.id);
+    if(!badge)return;
+    const touched=touchedGroups[cb.dataset.q]||false;
+    if(cb.checked){
+      badge.textContent='Mantener y mejorar';
+      badge.className='status-badge status-ok';
+      badge.style.display='';
+      checked++;
+    } else if(touched){
+      badge.textContent='Priorizar';
+      badge.className='status-badge status-bad';
+      badge.style.display='';
+      pending++;
+    } else {
+      badge.style.display='none';
+    }
+  });
+  document.getElementById('checkedCount').textContent=checked;
+  document.getElementById('pendingCount').textContent=pending;
+}
+
+function actualizarProgress(){
+  const all=document.querySelectorAll('input[type=checkbox]');
+  let done=0;all.forEach(cb=>{if(cb.checked)done++;});
+  const pct=all.length>0?(done/all.length)*100:0;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressLabel').textContent=`${done} / ${all.length} opciones`;
+}
+
+function limpiar(){
+  document.querySelectorAll('input').forEach(i=>{
+    if(i.type==='checkbox')i.checked=false;
+    if(i.type==='text')i.value='';
+  });
+  actualizar();
+}
+
+function guardar() {
+  // Validar identificación
+  const nombre = (document.getElementById('ident_nombre')?.value || '').trim();
+  const dependencia = (document.getElementById('ident_dependencia')?.value || '').trim();
+  const vigencia = (document.getElementById('ident_vigencia')?.value || '').trim();
+  if (!nombre || !dependencia || !vigencia) {
+    const al = document.getElementById('identAlert');
+    if (al) { al.style.display = 'block'; setTimeout(()=>{ al.style.display='none'; }, 3500); }
+    return;
+  }
+
+  // Recoger respuestas
+  const data = [];
+  questions.forEach(q => {
+    const body = document.getElementById(`body_${q.id}`);
+    if (!body) return;
+    body.querySelectorAll('.option-row').forEach((row, idx) => {
+      const cb = row.querySelector('input[type=checkbox]');
+      const txt = row.querySelector('input[type=text]');
+      const badge = row.querySelector('.status-badge');
+      data.push({
+        pregunta: q.text,
+        codigo: q.id,
+        opcion: q.options[idx]?.label || '',
+        seleccionado: cb ? cb.checked : false,
+        soporte: txt ? txt.value : '',
+        estado: badge ? badge.textContent : ''
+      });
+    });
+  });
+
+  const puntaje = parseFloat(document.getElementById('total')?.textContent || '0');
+  const seleccionadas = parseInt(document.getElementById('checkedCount')?.textContent || '0');
+  const priorizar = parseInt(document.getElementById('pendingCount')?.textContent || '0');
+
+  const output = {
+    fecha_envio: new Date().toISOString(),
+    nombre_funcionario: nombre,
+    dependencia: dependencia,
+    vigencia: vigencia,
+    puntaje_total: puntaje,
+    total_seleccionadas: seleccionadas,
+    a_priorizar: priorizar,
+    respuestas: data
+  };
+
+  // 1. Enviar a Google Sheets via Apps Script
+  const SCRIPT_URL = 'REEMPLAZAR_CON_URL_DE_APPS_SCRIPT';
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(output)
+  }).then(() => {
+    const ok = document.getElementById('identSuccess');
+    if (ok) { ok.style.display = 'block'; setTimeout(()=>{ ok.style.display='none'; }, 4000); }
+  }).catch((err) => {
+    console.error('Error enviando a Sheets:', err);
+  });
+
+  // 2. Descargar JSON de respaldo
+
+  const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download='autodiagnostico_TRA.json';
+  a.click();
+}
+
+buildUI();
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'plan') renderPlan();
+}
+
+function getPlanItems() {
+  const rows = [];
+  questions.forEach(q => {
+    const body = document.getElementById('body_' + q.id);
+    if (!body) return;
+    const groupTouched = document.querySelector('input[data-q="' + q.id + '"]:checked');
+    if (!groupTouched) return;
+    body.querySelectorAll('.option-row').forEach((row, idx) => {
+      const cb = row.querySelector('input[type=checkbox]');
+      if (!cb || cb.dataset.neg === '1' || cb.checked) return;
+      rows.push({ qid: q.id, label: q.options[idx]?.label || '' });
+    });
+  });
+  return rows;
+}
+
+function updatePlanBadge() {
+  const badge = document.getElementById('planBadge');
+  if (!badge) return;
+  const n = getPlanItems().length;
+  badge.textContent = n;
+  badge.className = 'tab-badge' + (n === 0 ? ' zero' : '');
+}
+
+function renderPlan() {
+  updatePlanBadge();
+  const rows = getPlanItems();
+  const cont = document.getElementById('planContent');
+  if (!cont) return;
+  if (rows.length === 0) {
+    cont.innerHTML = '<div class="plan-empty"><div class="icon">✅</div>Sin ítems a priorizar todavía.<br>Complete el autodiagnóstico primero.</div>';
+    return;
+  }
+  let html = '<div class="plan-table-wrap"><table class="plan-table"><thead><tr><th>#</th><th>Código</th><th>Tema a Priorizar</th><th>Tarea a Realizar</th><th>Fecha Inicio</th><th>Fecha Final</th><th>Entregable</th><th>Responsable</th></tr></thead><tbody>';
+  rows.forEach((r, i) => {
+    const lbl = r.label.length > 90 ? r.label.substring(0, 90) + '…' : r.label;
+    html += `<tr><td style="text-align:center;color:var(--text-soft);font-weight:600">${i+1}</td><td><span class="code-pill">${r.qid}</span></td><td class="topic-cell">${lbl}</td><td><input type="text" id="pt_${i}_tarea" placeholder="Describir la tarea…"></td><td><input type="date" id="pt_${i}_inicio"></td><td><input type="date" id="pt_${i}_fin"></td><td><input type="text" id="pt_${i}_entregable" placeholder="Documento, informe…"></td><td><input type="text" id="pt_${i}_resp" placeholder="Nombre o cargo"></td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+
+function exportarPlan() {
+  const cont = document.getElementById('planContent');
+  if (!cont) return;
+  const filas = cont.querySelectorAll('tbody tr');
+  if (!filas.length) { alert('No hay ítems en el plan de trabajo.'); return; }
+  const plan = [];
+  filas.forEach((tr, i) => {
+    const tds = tr.querySelectorAll('td');
+    plan.push({ numero: i+1, codigo: tds[1]?.querySelector('.code-pill')?.textContent||'', tema: tds[2]?.textContent?.trim()||'', tarea: document.getElementById('pt_'+i+'_tarea')?.value||'', fecha_inicio: document.getElementById('pt_'+i+'_inicio')?.value||'', fecha_fin: document.getElementById('pt_'+i+'_fin')?.value||'', entregable: document.getElementById('pt_'+i+'_entregable')?.value||'', responsable: document.getElementById('pt_'+i+'_resp')?.value||'' });
+  });
+  const blob = new Blob([JSON.stringify({plan_de_trabajo: plan}, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan_de_trabajo.json'; a.click();
+}
+
+const _orig = actualizarFormulario;
+actualizarFormulario = function() { _orig(); updatePlanBadge(); };
+
+</script>
+</body>
+</html>
