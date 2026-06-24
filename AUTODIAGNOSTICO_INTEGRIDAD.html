@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Autodiagnóstico — Integridad Pública</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+:root{
+  --navy:#0B2B5C;--navy-mid:#153D7A;--navy-light:#1E5299;
+  --gold:#C8A951;--gold-light:#F0D98A;
+  --surface:#F5F7FB;--card:#FFFFFF;--border:#DDE3EE;
+  --text:#1A2340;--text-soft:#5A6480;
+  --ok-bg:#E6F4EC;--ok-text:#1A6B3C;--ok-border:#7EC8A0;
+  --bad-bg:#FDF0EF;--bad-text:#B03020;--bad-border:#F4A89A;
+  --neg-bg:#F7F8FA;--neg-text:#8A94A6;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--surface);color:var(--text);line-height:1.5;}
+.header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);color:#fff;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(11,43,92,.3);}
+.header-inner{max-width:860px;margin:0 auto;padding:20px 24px 16px;display:flex;align-items:flex-start;gap:20px;}
+.header-icon{width:48px;height:48px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px;}
+.header-text{flex:1;}
+.header-text .eyebrow{font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--gold-light);text-transform:uppercase;margin-bottom:4px;}
+.header-text h1{font-size:17px;font-weight:700;line-height:1.3;color:#fff;}
+.header-text .subtitle{font-size:12px;color:rgba(255,255,255,.65);margin-top:3px;}
+.score-pill{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.22);border-radius:50px;padding:8px 16px;text-align:center;min-width:90px;flex-shrink:0;}
+.score-pill .score-val{font-size:22px;font-weight:700;color:var(--gold-light);line-height:1;}
+.score-pill .score-label{font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+.progress-bar-wrap{max-width:860px;margin:0 auto;padding:0 24px 12px;display:flex;align-items:center;gap:10px;}
+.progress-bar-track{flex:1;height:5px;background:rgba(255,255,255,.18);border-radius:99px;overflow:hidden;}
+.progress-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--gold-light),var(--gold));border-radius:99px;transition:width .4s ease;}
+.progress-label{font-size:10px;color:rgba(255,255,255,.55);white-space:nowrap;letter-spacing:.05em;}
+.main{max-width:860px;margin:0 auto;padding:28px 24px 60px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:18px;overflow:hidden;box-shadow:0 1px 4px rgba(11,43,92,.06);transition:box-shadow .2s;}
+.card:hover{box-shadow:0 4px 18px rgba(11,43,92,.1);}
+.card-score-bar{height:3px;background:var(--border);}
+.card-score-fill{height:100%;width:0%;background:var(--gold);transition:width .4s ease;}
+.card-header{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border);background:#FAFBFD;}
+.card-code{background:var(--navy);color:var(--gold-light);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:6px;white-space:nowrap;margin-top:1px;flex-shrink:0;}
+.card-question{font-size:13.5px;font-weight:600;color:var(--text);line-height:1.45;}
+.card-body{padding:10px 0;}
+.option-row{display:flex;align-items:flex-start;padding:10px 20px;border-bottom:1px solid #F0F2F7;transition:background .15s;cursor:pointer;}
+.option-row:last-child{border-bottom:none;}
+.option-row:hover{background:#F5F7FB;}
+.option-row.is-negative{background:var(--neg-bg);}
+.option-row.is-negative:hover{background:#EEF0F5;}
+.cb-wrap{flex-shrink:0;margin-top:1px;display:flex;align-items:center;}
+.cb-wrap input[type=checkbox]{display:none;}
+.cb-box{width:18px;height:18px;border:2px solid var(--border);border-radius:5px;background:#fff;display:flex;align-items:center;justify-content:center;transition:all .15s;cursor:pointer;flex-shrink:0;}
+.cb-wrap input:checked+.cb-box{background:var(--navy);border-color:var(--navy);}
+.cb-wrap input:checked+.cb-box::after{content:'';width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px);display:block;}
+.is-negative .cb-wrap input:checked+.cb-box{background:var(--neg-text);border-color:var(--neg-text);}
+.option-content{flex:1;display:flex;flex-direction:column;gap:6px;padding-left:12px;}
+.option-label{font-size:13px;color:var(--text);line-height:1.45;cursor:pointer;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.option-label-text{flex:1;}
+.status-badge{font-size:10px;font-weight:600;letter-spacing:.06em;padding:2px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0;text-transform:uppercase;}
+.status-ok{background:var(--ok-bg);color:var(--ok-text);border:1px solid var(--ok-border);}
+.status-bad{background:var(--bad-bg);color:var(--bad-text);border:1px solid var(--bad-border);}
+.soporte-input{width:100%;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-family:inherit;font-size:12px;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s;}
+.soporte-input::placeholder{color:#AEBACF;}
+.soporte-input:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(30,82,153,.12);background:#fff;}
+.is-negative .soporte-input{background:var(--neg-bg);}
+.neg-label-text{color:var(--neg-text);font-style:italic;}
+.actions{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border:none;border-radius:9px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;}
+.btn-primary{background:var(--navy);color:#fff;box-shadow:0 2px 8px rgba(11,43,92,.3);}
+.btn-primary:hover{background:var(--navy-light);transform:translateY(-1px);}
+.btn-secondary{background:#fff;color:var(--text-soft);border:1.5px solid var(--border);}
+.btn-secondary:hover{background:var(--surface);border-color:#B0BAD0;}
+.btn svg{width:15px;height:15px;}
+.summary-bar{position:fixed;bottom:0;left:0;right:0;background:var(--navy);border-top:2px solid var(--gold);padding:10px 24px;display:flex;align-items:center;justify-content:center;gap:32px;z-index:90;box-shadow:0 -4px 20px rgba(11,43,92,.25);}
+.stat-item{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.8);font-size:12px;}
+.stat-val{font-size:16px;font-weight:700;color:var(--gold-light);}
+.stat-divider{width:1px;height:30px;background:rgba(255,255,255,.15);}
+
+  /* ── CONSULTOR en progress-bar ── */
+  .progress-bar-wrap {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .consultant-info {
+    margin-left: auto;
+    text-align: right;
+    line-height: 1.35;
+    flex-shrink: 0;
+  }
+  .consultant-info .ci-name  { font-size: 11px; font-weight: 700; color: var(--gold-light); display: block; white-space: nowrap; }
+  .consultant-info .ci-role  { font-size: 10px; color: rgba(255,255,255,0.75); display: block; }
+  .consultant-info .ci-contact { font-size: 9.5px; color: rgba(255,255,255,0.55); display: block; }
+
+  /* ── TABS ── */
+  .tab-nav {
+    max-width: 860px; margin: 0 auto;
+    padding: 14px 24px 0;
+    display: flex; gap: 6px;
+    background: var(--surface);
+  }
+  .tab-btn {
+    padding: 9px 20px;
+    border: 1.5px solid var(--border); border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    background: #E8ECF5; color: var(--text-soft);
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .tab-btn.active { background: var(--card); color: var(--navy); border-color: var(--border); box-shadow: 0 -2px 8px rgba(11,43,92,0.07); }
+  .tab-btn:hover:not(.active) { background: #D8DDED; }
+  .tab-badge { background: var(--bad-bg); color: var(--bad-text); border: 1px solid var(--bad-border); font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 99px; }
+  .tab-badge.zero { background: #eee; color: #aaa; border-color: #ddd; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── PLAN DE TRABAJO ── */
+  .plan-wrap { max-width: 860px; margin: 0 auto; padding: 28px 24px 80px; }
+  .plan-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .plan-title { font-size: 16px; font-weight: 700; color: var(--navy); }
+  .plan-subtitle { font-size: 12px; color: var(--text-soft); margin-top: 2px; }
+  .plan-empty { text-align: center; padding: 60px 20px; color: var(--text-soft); font-size: 13px; }
+  .plan-empty .icon { font-size: 40px; margin-bottom: 12px; }
+  .plan-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  .plan-table { width: 100%; border-collapse: collapse; font-size: 12px; background: var(--card); }
+  .plan-table th { background: var(--navy); color: #fff; padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; white-space: nowrap; }
+  .plan-table th:first-child { border-radius: 12px 0 0 0; }
+  .plan-table th:last-child  { border-radius: 0 12px 0 0; }
+  .plan-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .plan-table tr:last-child td { border-bottom: none; }
+  .plan-table tr:nth-child(even) td { background: var(--surface); }
+  .plan-table .topic-cell { font-weight: 500; color: var(--navy); max-width: 220px; }
+  .plan-table .code-pill { font-size: 10px; font-weight: 700; background: var(--navy); color: #fff; padding: 2px 7px; border-radius: 99px; display: inline-block; margin-bottom: 4px; }
+  .plan-table input[type=text], .plan-table input[type=date] { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-family: inherit; font-size: 11px; color: var(--text); background: #fff; outline: none; }
+  .plan-table input:focus { border-color: var(--focus); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+  .btn-export-plan { background: var(--gold); color: var(--navy); border: none; border-radius: 8px; padding: 9px 18px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .btn-export-plan:hover { background: var(--gold-light); }
+
+
+  /* ── BANNER IDENTIFICACIÓN ── */
+  .ident-banner {
+    background: linear-gradient(135deg, #0B2B5C 0%, #153D7A 100%);
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    box-shadow: 0 3px 20px rgba(11,43,92,0.35);
+  }
+  .ident-inner {
+    max-width: 860px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+  }
+  .ident-field {
+    display: flex; flex-direction: column; flex: 1; min-width: 160px;
+  }
+  .ident-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.55); text-transform: uppercase; margin-bottom: 4px;
+  }
+  .ident-input {
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 7px;
+    padding: 7px 11px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 12px; color: #fff;
+    outline: none; width: 100%;
+  }
+  .ident-input::placeholder { color: rgba(255,255,255,0.35); }
+  .ident-input:focus { border-color: #C8A951; background: rgba(255,255,255,0.15); }
+  .ident-required { color: #F0D98A; }
+  .ident-alert {
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #B03020; color: #fff; border-radius: 10px;
+    padding: 12px 24px; font-size: 13px; font-weight: 600;
+    z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s;
+  }
+  .ident-success {
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #1A6B3C; color: #fff; border-radius: 10px;
+    padding: 12px 24px; font-size: 13px; font-weight: 600;
+    z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s;
+  }
+  @keyframes fadeIn { from { opacity:0; top:10px; } to { opacity:1; top:20px; } }
+
+</style>
+</head>
+<body>
+
+<!-- BANNER IDENTIFICACIÓN -->
+<div class="ident-banner">
+  <div class="ident-inner">
+    <div class="ident-field">
+      <span class="ident-label">Nombre completo <span class="ident-required">*</span></span>
+      <input class="ident-input" type="text" id="ident_nombre" placeholder="Funcionario que diligencia…">
+    </div>
+    <div class="ident-field">
+      <span class="ident-label">Dependencia / Área <span class="ident-required">*</span></span>
+      <input class="ident-input" type="text" id="ident_dependencia" placeholder="Secretaría, Despacho, Área…">
+    </div>
+    <div class="ident-field" style="max-width:120px;min-width:100px">
+      <span class="ident-label">Vigencia <span class="ident-required">*</span></span>
+      <input class="ident-input" type="number" id="ident_vigencia" placeholder="2024" min="2020" max="2030">
+    </div>
+  </div>
+</div>
+<div class="ident-alert" id="identAlert">⚠️ Complete Nombre, Dependencia y Vigencia antes de guardar.</div>
+<div class="ident-success" id="identSuccess">✅ Respuestas enviadas correctamente a Google Sheets.</div>
+<!-- FIN BANNER -->
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-icon">🛡️</div>
+    <div class="header-text">
+      <div class="eyebrow">Función Pública · Índice INT · Integridad Pública</div>
+      <h1>Autodiagnóstico de Integridad Pública</h1>
+      <div class="subtitle">Marque las opciones que aplican y registre el soporte correspondiente</div>
+    </div>
+    <div class="score-pill">
+      <div class="score-val" id="total">0</div>
+      <div class="score-label">Puntos</div>
+    </div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">0 / 0 opciones</div>
+      <div class="consultant-info">
+        <span class="ci-name">Ilder Luis Palta Velasco</span>
+        <span class="ci-role">Consultor Organizacional</span>
+        <span class="ci-contact">📱 317 297 1922 · ✉️ luispalta@gmail.com</span>
+      </div>
+  </div>
+</div>
+<div class="tab-nav">
+  <button class="tab-btn active" id="tab-diag" onclick="switchTab('diag')">📋 Autodiagnóstico</button>
+  <button class="tab-btn" id="tab-plan" onclick="switchTab('plan')">🗂️ Plan de Trabajo <span class="tab-badge zero" id="planBadge">0</span></button>
+</div>
+<div class="tab-panel active" id="panel-diag">
+<div class="main" id="mainContent"></div>
+</div><!-- cierre panel-diag -->
+
+<div class="tab-panel" id="panel-plan">
+  <div class="plan-wrap">
+    <div class="plan-header-row">
+      <div>
+        <div class="plan-title">🗂️ Plan de Trabajo</div>
+        <div class="plan-subtitle">Opciones marcadas como <strong>Priorizar</strong> — complete fechas, entregable y responsable</div>
+      </div>
+      <button class="btn-export-plan" onclick="exportarPlan()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar Plan (JSON)
+      </button>
+    </div>
+    <div id="planContent">
+      <div class="plan-empty"><div class="icon">✅</div>Sin ítems a priorizar.<br>Complete el autodiagnóstico primero.</div>
+    </div>
+  </div>
+</div>
+
+<div class="main" style="padding-top:0">
+  <div class="actions">
+    <button class="btn btn-primary" onclick="guardar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Guardar resultado
+    </button>
+    <button class="btn btn-secondary" onclick="limpiar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
+      Limpiar todo
+    </button>
+  </div>
+</div>
+<div class="summary-bar">
+  <div class="stat-item"><span>Puntaje total:</span><span class="stat-val" id="total2">0</span><span>pts</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat-item"><span>Seleccionadas:</span><span class="stat-val" id="checkedCount">0</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat-item"><span>A priorizar:</span><span class="stat-val" id="pendingCount">0</span></div>
+</div>
+<script>
+const POINTS_PER = 1.25;
+const questions = [
+  {
+    "id": "INT200",
+    "text": "Para gestionar el cumplimiento de la política de integridad pública desde la planeación institucional, la entidad durante la vigencia evaluada:",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Formuló o actualizó su estrategia y/o acciones en materia integridad pública y cronograma de trabajo"
+      },
+      {
+        "neg": 0,
+        "label": "Adelantó acciones asociadas al Código de Integridad del Servicio Público Colombiano"
+      },
+      {
+        "neg": 0,
+        "label": "Adelantó acciones asociadas a la gestión de conflictos de intereses"
+      },
+      {
+        "neg": 0,
+        "label": "Adelantó acciones asociadas al desarrollo de la cultura de integridad pública"
+      },
+      {
+        "neg": 0,
+        "label": "Incluyó la estrategia y/o acciones en materia de integridad en la planeación institucional"
+      },
+      {
+        "neg": 0,
+        "label": "Designó un área o grupo de trabajo encargado de implementar las acciones en materia de integridad"
+      },
+      {
+        "neg": 0,
+        "label": "Evaluó e hizo seguimiento a la implementación de las acciones en materia de integridad"
+      },
+      {
+        "neg": 0,
+        "label": "Estableció indicadores para el seguimiento y evaluación de las acciones en materia de integridad"
+      },
+      {
+        "neg": 0,
+        "label": "Formuló acciones de integridad con la participación de actores externos a la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Designó el Rol o responsable de Gestor de Integridad en las dependencias de la entidad"
+      },
+      {
+        "neg": 1,
+        "label": "No desarrolló ninguna acción"
+      }
+    ]
+  },
+  {
+    "id": "INT201",
+    "text": "¿Qué fuentes de información o instrumentos tuvo en cuenta la entidad para evaluar la política de integridad pública?",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Resultados de la medición del Índice de Desempeño Institucional en la política de integridad pública (FURAG) u otras mediciones como encuesta sobre Ambiente y Desempeño Institucional (EDI - EDID), ITA (Procuraduría General de la Nación)"
+      },
+      {
+        "neg": 0,
+        "label": "Encuestas internas sobre la apropiación del Código de Integridad del Servicio Público Colombiano, el desarrollo de la cultura de integridad pública y la gestión de conflictos de intereses"
+      },
+      {
+        "neg": 0,
+        "label": "Informes internos sobre gestión de riesgos; financieros; de control interno; planeación, entre otros"
+      },
+      {
+        "neg": 0,
+        "label": "Reporte de cumplimiento de la Ley 2013 de 2019 (Aplicativo por la Integridad Pública) y del Decreto 830 de 2021"
+      },
+      {
+        "neg": 0,
+        "label": "Información consolidada sobre Peticiones, Quejas, Reclamos, Sugerencias, Denuncias (PQRSD)"
+      },
+      {
+        "neg": 0,
+        "label": "Otros informes o estudios (Encuesta de percepción del Desempeño Institucional del Departamento Nacional de Estadística - DANE, lineamientos internacionales -OCDE, Naciones Unidas, entre otros)"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguno de los anteriores"
+      }
+    ]
+  },
+  {
+    "id": "INT202",
+    "text": "Para mejorar la apropiación de los valores del Código de Integridad del Servicio Público Colombiano, durante la vigencia evaluada la entidad:",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Incorporó en el proceso de inducción el curso Integridad, Transparencia y Lucha contra la Corrupción dispuesto por Función Pública"
+      },
+      {
+        "neg": 0,
+        "label": "Incluyó capacitaciones sobre Integridad Pública en el Plan Institucional de Capacitación PIC"
+      },
+      {
+        "neg": 0,
+        "label": "Desarrolló actividades de difusión y sensibilización con sus servidores y contratistas"
+      },
+      {
+        "neg": 0,
+        "label": "Desarrolló las actividades propuestas en la caja de herramientas dispuesta por Función Pública a los servidores y contratistas"
+      },
+      {
+        "neg": 0,
+        "label": "Evaluó en sus servidores y contratistas el nivel de apropiación de los valores definidos en el código de integridad"
+      },
+      {
+        "neg": 0,
+        "label": "Incorporó acciones de fortalecimiento de la Cultura de Integridad en el Programa de Transparencia y Ética Pública"
+      },
+      {
+        "neg": 0,
+        "label": "Desarrolló ejercicios de cambio cultural para la adopción de prácticas de integridad en el servicio público"
+      },
+      {
+        "neg": 0,
+        "label": "Otro. ¿Cuál?:"
+      },
+      {
+        "neg": 1,
+        "label": "No ejecutó acciones"
+      }
+    ]
+  },
+  {
+    "id": "INT203",
+    "text": "Para la gestión preventiva de conflicto de interés, la entidad definió una estrategia o acciones específicas para:",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Implementar un procedimiento interno sobre el manejo y declaración de conflictos de interés"
+      },
+      {
+        "neg": 0,
+        "label": "Capacitar a sus servidores y contratistas en la identificación, declaración y gestión de posibles conflictos de interés"
+      },
+      {
+        "neg": 0,
+        "label": "Identificar sus servidores y contratistas obligados a cumplir con las disposiciones de la Ley 2013 de 2019"
+      },
+      {
+        "neg": 0,
+        "label": "Identificar sus servidores como Personas Expuestas Políticamente – PEP (Decreto 830 de 2021)"
+      },
+      {
+        "neg": 0,
+        "label": "Hacer seguimiento y control al cumplimiento de la Ley 2013 de 2019 en el Aplicativo por la Integridad Pública"
+      },
+      {
+        "neg": 0,
+        "label": "Gestionar de acuerdo con el procedimiento interno las recusaciones y posibles conflictos de interés informados por los servidores o contratistas de la entidad"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "INT206",
+    "text": "En los procesos de contratación con personas jurídicas, la entidad incorpora elementos de integridad pública como:",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Revisión de constitución de las personas jurídicas para la verificación de posibles conflictos de intereses de sus socios, junta directiva y representante legal"
+      },
+      {
+        "neg": 0,
+        "label": "Verificación de estados financieros con notas de las personas jurídicas para identificar posibles riesgos de corrupción"
+      },
+      {
+        "neg": 0,
+        "label": "Verificación de antecedentes fiscales y disciplinarios de las personas jurídicas para identificar posibles conflictos de intereses e idoneidad"
+      },
+      {
+        "neg": 0,
+        "label": "Consulta de listas para identificar conflictos o evitar la materialización de riesgos reputacionales, financieros y legales para la entidad"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      },
+      {
+        "neg": 0,
+        "label": "No aplica porque no ha adelantado procesos de contratación con personas jurídicas"
+      }
+    ]
+  },
+  {
+    "id": "INT207",
+    "text": "Para gestionar la mejora continua de la política de integridad pública, la entidad:",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Promovió una cultura de gestión del conocimiento y aprendizaje institucional"
+      },
+      {
+        "neg": 0,
+        "label": "Identificó y documentó sus experiencias que generaron valor y sirven como referente de buenas prácticas"
+      },
+      {
+        "neg": 0,
+        "label": "Difundió los resultados de la documentación y sistematización de las buenas prácticas con sus grupos de valor y usuarios interesados"
+      },
+      {
+        "neg": 0,
+        "label": "Identificó y documentó lecciones aprendidas internas y externas que lleven a mejorar los procesos, procedimientos y actividades de gestión"
+      },
+      {
+        "neg": 0,
+        "label": "Implementó acciones de mejora institucional como resultado de la documentación y sistematización de lecciones aprendidas"
+      },
+      {
+        "neg": 0,
+        "label": "Implementó espacios internos de construcción, co-creación e implementación de lineamientos para la gestión adecuada de conflictos de intereses, y el fortalecimiento de los valores del servicio público"
+      },
+      {
+        "neg": 0,
+        "label": "Implementó espacios externos de colaboración para activar e implementar prácticas de integridad pública"
+      },
+      {
+        "neg": 0,
+        "label": "Otro. ¿Cuál?:"
+      },
+      {
+        "neg": 1,
+        "label": "No realizó ninguna acción para la mejora continua de la política de integridad pública"
+      }
+    ]
+  },
+  {
+    "id": "INT208",
+    "text": "¿Cuáles de las siguientes acciones adelantó la entidad para evaluar los instrumentos y estrategias implementadas para la gestión de conflictos de interés?",
+    "options": [
+      {
+        "neg": 0,
+        "label": "De acuerdo con el procedimiento se definieron las instancias internas (área, grupo trabajo, comité institucional) para el seguimiento y trazabilidad de las situaciones manifestadas como conflictos de interés"
+      },
+      {
+        "neg": 0,
+        "label": "Realizó jornadas de capacitación para divulgar información sobre conflictos de intereses y su respectivo trámite (identificación, canales, implicaciones, etc.)"
+      },
+      {
+        "neg": 0,
+        "label": "Creó y/o actualizó y difundió los canales de consulta y orientación para el manejo de conflictos de intereses y su declaración"
+      },
+      {
+        "neg": 0,
+        "label": "Creó y/o actualizó y difundió canales internos y externos adecuados para la declaración de conflictos de intereses e impedimentos y recusaciones por parte tanto de servidores y contratistas de la entidad, como de la ciudadanía"
+      },
+      {
+        "neg": 0,
+        "label": "Estableció los medios y mecanismos para la declaración y gestión de conflictos de intereses, impedimentos y recusaciones"
+      },
+      {
+        "neg": 0,
+        "label": "Llevó a cabo el seguimiento y control a la gestión de conflictos de intereses, impedimentos y recusaciones"
+      },
+      {
+        "neg": 0,
+        "label": "Revisó las denuncias sobre hechos de corrupción asociados a conflictos de intereses recibidas a través del canal de PQRSD y de los canales internos dispuestos por la entidad con el fin de redireccionarlas según el procedimiento adoptado"
+      },
+      {
+        "neg": 0,
+        "label": "Implementó mecanismos preventivos frente a potenciales conflictos de intereses"
+      },
+      {
+        "neg": 0,
+        "label": "Se utilizaron los análisis de las declaraciones de conflictos de intereses, impedimentos y recusaciones como insumo para mejorar el procedimiento establecido"
+      }
+    ]
+  },
+  {
+    "id": "INT212",
+    "text": "Como producto de los avances en la implementación de la política de integridad pública, en la vigencia evaluada la entidad:",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Documentó sus buenas prácticas y lecciones aprendidas sobre integridad pública"
+      },
+      {
+        "neg": 0,
+        "label": "Incorporó buenas prácticas y lecciones aprendidas del sector público o privado"
+      },
+      {
+        "neg": 0,
+        "label": "Participó de iniciativas de articulación y trabajo en red centrados en integridad pública"
+      },
+      {
+        "neg": 1,
+        "label": "No desarrolló ninguna acción"
+      }
+    ]
+  },
+  {
+    "id": "INT213",
+    "text": "De los servidores y contratistas obligados se verifica el registro de información en el aplicativo por la integridad en cuanto a:",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Registro para el ingreso y cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Registro periódico y cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Registro para el retiro y cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "Antes, durante y al término de la prestación del servicio (para los contratistas) y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "INT214",
+    "text": "Para avanzar en la identificación de posibles situaciones que afectan la integridad pública, la entidad:",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Dispuso canales internos de denuncia"
+      },
+      {
+        "neg": 0,
+        "label": "Dispuso canales externos de denuncia"
+      },
+      {
+        "neg": 0,
+        "label": "Estableció e implementó un procedimiento para el procesamiento de las denuncias recibidas (internas y externas)"
+      },
+      {
+        "neg": 0,
+        "label": "Difundió el procedimiento para las denuncias entre sus servidores y contratistas"
+      },
+      {
+        "neg": 0,
+        "label": "Difundió el procedimiento para las denuncias entre la ciudadanía y grupos de valor"
+      },
+      {
+        "neg": 0,
+        "label": "Incluyó dentro de sus procesos de capacitación institucional escenarios para mejorar el conocimiento sobre el régimen disciplinario en lo relacionado con la obligación de denunciar irregularidades"
+      },
+      {
+        "neg": 0,
+        "label": "Realizó seguimiento a las denuncias internas y externas"
+      },
+      {
+        "neg": 0,
+        "label": "Generó mecanismos de protección de la información recibida en las denuncias"
+      },
+      {
+        "neg": 0,
+        "label": "Estableció criterios de clasificación de la información de las denuncias"
+      },
+      {
+        "neg": 1,
+        "label": "No se ha implementado ningún mecanismo"
+      }
+    ]
+  },
+  {
+    "id": "INT215",
+    "text": "¿La entidad cuenta con un comité de convivencia laboral atendiendo lo establecido en la Ley 1010 de 2006 y las Resoluciones 652 y 1356 de 2012 del Ministerio de Trabajo?",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 0,
+        "label": "No se ha conformado"
+      }
+    ]
+  },
+  {
+    "id": "INT216",
+    "text": "En desarrollo de las funciones del comité de convivencia laboral la entidad:",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Cuenta con un procedimiento interno confidencial y conciliatorio que permite su operación efectiva"
+      },
+      {
+        "neg": 0,
+        "label": "Adelanta de forma confidencial los casos específicos en los que se formulan quejas o reclamos, que pueden tipificar conductas o circunstancias de acoso laboral"
+      },
+      {
+        "neg": 0,
+        "label": "Adelanta los procesos correspondientes con las partes involucradas en los tiempos establecidos en la Circular Conjunta de Función Pública - Ministerio de Trabajo No. 100-004 de 2024"
+      },
+      {
+        "neg": 0,
+        "label": "Formula planes de mejora concertados entre las partes, para construir, renovar y promover la convivencia laboral"
+      },
+      {
+        "neg": 0,
+        "label": "Ejecuta el seguimiento correspondiente a los planes de mejora suscritos en cada caso particular"
+      }
+    ]
+  },
+  {
+    "id": "INT217",
+    "text": "De acuerdo con los procesos que adelanta el comité de convivencia laboral, el responsable:",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Informó a la Alta Dirección sobre las estadísticas de las quejas y el seguimiento de los casos"
+      },
+      {
+        "neg": 0,
+        "label": "Hizo seguimiento a las recomendaciones entregadas al área gestión humana y a la Alta Dirección"
+      },
+      {
+        "neg": 0,
+        "label": "Hizo seguimiento a las posibles intervenciones a partir de las recomendaciones entregadas"
+      },
+      {
+        "neg": 0,
+        "label": "Articuló con la administradora de riesgos laborales acciones de asesoría y asistencia técnica para la intervención de factores psicosociales"
+      },
+      {
+        "neg": 0,
+        "label": "Remitió a la Procuraduría General de la Nación aquellos casos en donde no se llegó a un acuerdo o se incumplieron los compromisos pactados"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      },
+      {
+        "neg": 1,
+        "label": "No se han recibido casos para tratamiento del comité"
+      }
+    ]
+  }
+];
+
+function buildUI(){
+  const main=document.getElementById('mainContent');
+  main.innerHTML='';
+  questions.forEach(q=>{
+    const card=document.createElement('div');
+    card.className='card';
+    card.dataset.qid=q.id;
+    card.innerHTML=`
+      <div class="card-score-bar"><div class="card-score-fill" id="bar_${q.id}"></div></div>
+      <div class="card-header">
+        <span class="card-code">${q.id}</span>
+        <span class="card-question">${q.text}</span>
+      </div>
+      <div class="card-body" id="body_${q.id}"></div>
+    `;
+    const body=card.querySelector(`#body_${q.id}`);
+    q.options.forEach((opt,idx)=>{
+      const row=document.createElement('div');
+      row.className='option-row'+(opt.neg?' is-negative':'');
+      const cbId=`cb_${q.id}_${idx}`;
+      row.innerHTML=`
+        <div class="cb-wrap">
+          <input type="checkbox" id="${cbId}" data-q="${q.id}" data-neg="${opt.neg}" value="${opt.neg?0:POINTS_PER}">
+          <label class="cb-box" for="${cbId}"></label>
+        </div>
+        <div class="option-content">
+          <label class="option-label" for="${cbId}">
+            <span class="option-label-text ${opt.neg?'neg-label-text':''}">${opt.label}</span>
+            ${opt.neg===0?`<span class="status-badge status-bad" id="badge_${cbId}">Priorizar</span>`:''}
+          </label>
+          <input type="text" class="soporte-input" placeholder="Soporte / link / texto">
+        </div>
+      `;
+      body.appendChild(row);
+    });
+    main.appendChild(card);
+  });
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',actualizar));
+  actualizar();
+}
+
+function actualizar(){
+  calcular(); actualizarEstados(); actualizarProgress();
+}
+
+function calcular(){
+  let total=0;
+  const groups={};
+  document.querySelectorAll('input[type=checkbox]').forEach(ch=>{
+    const q=ch.dataset.q;
+    if(!groups[q])groups[q]=[];
+    groups[q].push(ch);
+  });
+  for(const q in groups){
+    const neg=groups[q].some(ch=>ch.checked&&ch.dataset.neg==='1');
+    if(neg)continue;
+    groups[q].forEach(ch=>{if(ch.checked)total+=parseFloat(ch.value);});
+  }
+  const fmt=total.toFixed(2);
+  document.getElementById('total').textContent=fmt;
+  document.getElementById('total2').textContent=fmt;
+  questions.forEach(q=>{
+    const g=groups[q.id]||[];
+    const neg=g.some(ch=>ch.checked&&ch.dataset.neg==='1');
+    let pts=0;
+    if(!neg)g.forEach(ch=>{if(ch.checked)pts+=parseFloat(ch.value);});
+    const posCount=q.options.filter(o=>o.neg===0).length;
+    const max=posCount*POINTS_PER;
+    const bar=document.getElementById(`bar_${q.id}`);
+    if(bar)bar.style.width=max>0?Math.min(100,(pts/max)*100)+'%':'0%';
+  });
+}
+
+function actualizarEstados(){
+  let checked=0,pending=0;
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    if(cb.dataset.neg==='1')return;
+    const badge=document.getElementById('badge_'+cb.id);
+    if(!badge)return;
+    if(cb.checked){badge.textContent='Mantener y mejorar';badge.className='status-badge status-ok';checked++;}
+    else{badge.textContent='Priorizar';badge.className='status-badge status-bad';pending++;}
+  });
+  document.getElementById('checkedCount').textContent=checked;
+  document.getElementById('pendingCount').textContent=pending;
+}
+
+function actualizarProgress(){
+  const all=document.querySelectorAll('input[type=checkbox]');
+  let done=0;
+  all.forEach(cb=>{if(cb.checked)done++;});
+  const pct=all.length>0?(done/all.length)*100:0;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressLabel').textContent=`${done} / ${all.length} opciones`;
+}
+
+function limpiar(){
+  document.querySelectorAll('input').forEach(i=>{
+    if(i.type==='checkbox')i.checked=false;
+    if(i.type==='text')i.value='';
+  });
+  actualizar();
+}
+
+function guardar() {
+  // Validar identificación
+  const nombre = (document.getElementById('ident_nombre')?.value || '').trim();
+  const dependencia = (document.getElementById('ident_dependencia')?.value || '').trim();
+  const vigencia = (document.getElementById('ident_vigencia')?.value || '').trim();
+  if (!nombre || !dependencia || !vigencia) {
+    const al = document.getElementById('identAlert');
+    if (al) { al.style.display = 'block'; setTimeout(()=>{ al.style.display='none'; }, 3500); }
+    return;
+  }
+
+  // Recoger respuestas
+  const data = [];
+  questions.forEach(q => {
+    const body = document.getElementById(`body_${q.id}`);
+    if (!body) return;
+    body.querySelectorAll('.option-row').forEach((row, idx) => {
+      const cb = row.querySelector('input[type=checkbox]');
+      const txt = row.querySelector('input[type=text]');
+      const badge = row.querySelector('.status-badge');
+      data.push({
+        pregunta: q.text,
+        codigo: q.id,
+        opcion: q.options[idx]?.label || '',
+        seleccionado: cb ? cb.checked : false,
+        soporte: txt ? txt.value : '',
+        estado: badge ? badge.textContent : ''
+      });
+    });
+  });
+
+  const puntaje = parseFloat(document.getElementById('total')?.textContent || '0');
+  const seleccionadas = parseInt(document.getElementById('checkedCount')?.textContent || '0');
+  const priorizar = parseInt(document.getElementById('pendingCount')?.textContent || '0');
+
+  const output = {
+    fecha_envio: new Date().toISOString(),
+    nombre_funcionario: nombre,
+    dependencia: dependencia,
+    vigencia: vigencia,
+    puntaje_total: puntaje,
+    total_seleccionadas: seleccionadas,
+    a_priorizar: priorizar,
+    respuestas: data
+  };
+
+  // 1. Enviar a Google Sheets via Apps Script
+  const SCRIPT_URL = 'REEMPLAZAR_CON_URL_DE_APPS_SCRIPT';
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(output)
+  }).then(() => {
+    const ok = document.getElementById('identSuccess');
+    if (ok) { ok.style.display = 'block'; setTimeout(()=>{ ok.style.display='none'; }, 4000); }
+  }).catch((err) => {
+    console.error('Error enviando a Sheets:', err);
+  });
+
+  // 2. Descargar JSON de respaldo
+
+  const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download='autodiagnostico_integridad.json';
+  a.click();
+}
+
+buildUI();
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'plan') renderPlan();
+}
+
+function getPlanItems() {
+  const rows = [];
+  questions.forEach(q => {
+    const body = document.getElementById('body_' + q.id);
+    if (!body) return;
+    const groupTouched = document.querySelector('input[data-q="' + q.id + '"]:checked');
+    if (!groupTouched) return;
+    body.querySelectorAll('.option-row').forEach((row, idx) => {
+      const cb = row.querySelector('input[type=checkbox]');
+      if (!cb || cb.dataset.neg === '1' || cb.checked) return;
+      rows.push({ qid: q.id, label: q.options[idx]?.label || '' });
+    });
+  });
+  return rows;
+}
+
+function updatePlanBadge() {
+  const badge = document.getElementById('planBadge');
+  if (!badge) return;
+  const n = getPlanItems().length;
+  badge.textContent = n;
+  badge.className = 'tab-badge' + (n === 0 ? ' zero' : '');
+}
+
+function renderPlan() {
+  updatePlanBadge();
+  const rows = getPlanItems();
+  const cont = document.getElementById('planContent');
+  if (!cont) return;
+  if (rows.length === 0) {
+    cont.innerHTML = '<div class="plan-empty"><div class="icon">✅</div>Sin ítems a priorizar todavía.<br>Complete el autodiagnóstico primero.</div>';
+    return;
+  }
+  let html = '<div class="plan-table-wrap"><table class="plan-table"><thead><tr><th>#</th><th>Código</th><th>Tema a Priorizar</th><th>Tarea a Realizar</th><th>Fecha Inicio</th><th>Fecha Final</th><th>Entregable</th><th>Responsable</th></tr></thead><tbody>';
+  rows.forEach((r, i) => {
+    const lbl = r.label.length > 90 ? r.label.substring(0, 90) + '…' : r.label;
+    html += `<tr><td style="text-align:center;color:var(--text-soft);font-weight:600">${i+1}</td><td><span class="code-pill">${r.qid}</span></td><td class="topic-cell">${lbl}</td><td><input type="text" id="pt_${i}_tarea" placeholder="Describir la tarea…"></td><td><input type="date" id="pt_${i}_inicio"></td><td><input type="date" id="pt_${i}_fin"></td><td><input type="text" id="pt_${i}_entregable" placeholder="Documento, informe…"></td><td><input type="text" id="pt_${i}_resp" placeholder="Nombre o cargo"></td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+
+function exportarPlan() {
+  const cont = document.getElementById('planContent');
+  if (!cont) return;
+  const filas = cont.querySelectorAll('tbody tr');
+  if (!filas.length) { alert('No hay ítems en el plan de trabajo.'); return; }
+  const plan = [];
+  filas.forEach((tr, i) => {
+    const tds = tr.querySelectorAll('td');
+    plan.push({ numero: i+1, codigo: tds[1]?.querySelector('.code-pill')?.textContent||'', tema: tds[2]?.textContent?.trim()||'', tarea: document.getElementById('pt_'+i+'_tarea')?.value||'', fecha_inicio: document.getElementById('pt_'+i+'_inicio')?.value||'', fecha_fin: document.getElementById('pt_'+i+'_fin')?.value||'', entregable: document.getElementById('pt_'+i+'_entregable')?.value||'', responsable: document.getElementById('pt_'+i+'_resp')?.value||'' });
+  });
+  const blob = new Blob([JSON.stringify({plan_de_trabajo: plan}, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan_de_trabajo.json'; a.click();
+}
+
+const _orig = actualizarFormulario;
+actualizarFormulario = function() { _orig(); updatePlanBadge(); };
+
+</script>
+</body>
+</html>
