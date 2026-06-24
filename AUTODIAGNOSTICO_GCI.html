@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Autodiagnóstico GCI — Gestión del Conocimiento e Innovación</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+:root{
+  --navy:#0B2B5C;--navy-mid:#153D7A;--navy-light:#1E5299;
+  --gold:#C8A951;--gold-light:#F0D98A;
+  --surface:#F5F7FB;--card:#FFFFFF;--border:#DDE3EE;
+  --text:#1A2340;--text-soft:#5A6480;
+  --ok-bg:#E6F4EC;--ok-text:#1A6B3C;--ok-border:#7EC8A0;
+  --bad-bg:#FDF0EF;--bad-text:#B03020;--bad-border:#F4A89A;
+  --neg-bg:#F7F8FA;--neg-text:#8A94A6;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--surface);color:var(--text);line-height:1.5;}
+.header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);color:#fff;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(11,43,92,.3);}
+.header-inner{max-width:860px;margin:0 auto;padding:20px 24px 16px;display:flex;align-items:flex-start;gap:20px;}
+.header-icon{width:48px;height:48px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px;}
+.header-text{flex:1;}
+.header-text .eyebrow{font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--gold-light);text-transform:uppercase;margin-bottom:4px;}
+.header-text h1{font-size:17px;font-weight:700;line-height:1.3;color:#fff;}
+.header-text .subtitle{font-size:12px;color:rgba(255,255,255,.65);margin-top:3px;}
+.score-pill{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.22);border-radius:50px;padding:8px 16px;text-align:center;min-width:90px;flex-shrink:0;}
+.score-pill .score-val{font-size:22px;font-weight:700;color:var(--gold-light);line-height:1;}
+.score-pill .score-label{font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+.progress-bar-wrap{max-width:860px;margin:0 auto;padding:0 24px 12px;display:flex;align-items:center;gap:10px;}
+.progress-bar-track{flex:1;height:5px;background:rgba(255,255,255,.18);border-radius:99px;overflow:hidden;}
+.progress-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--gold-light),var(--gold));border-radius:99px;transition:width .4s ease;}
+.progress-label{font-size:10px;color:rgba(255,255,255,.55);white-space:nowrap;letter-spacing:.05em;}
+.main{max-width:860px;margin:0 auto;padding:28px 24px 60px;}
+.tipo-badge{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:99px;margin-left:8px;background:rgba(200,169,81,.18);color:var(--gold);border:1px solid rgba(200,169,81,.35);vertical-align:middle;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:18px;overflow:hidden;box-shadow:0 1px 4px rgba(11,43,92,.06);transition:box-shadow .2s;}
+.card:hover{box-shadow:0 4px 18px rgba(11,43,92,.1);}
+.card-score-bar{height:3px;background:var(--border);}
+.card-score-fill{height:100%;width:0%;background:var(--gold);transition:width .4s ease;}
+.card-header{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border);background:#FAFBFD;}
+.card-code{background:var(--navy);color:var(--gold-light);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:6px;white-space:nowrap;margin-top:1px;flex-shrink:0;}
+.card-question{font-size:13.5px;font-weight:600;color:var(--text);line-height:1.45;flex:1;}
+.card-body{padding:10px 0;}
+.option-row{display:flex;align-items:flex-start;padding:10px 20px;border-bottom:1px solid #F0F2F7;transition:background .15s;}
+.option-row:last-child{border-bottom:none;}
+.option-row:hover{background:#F5F7FB;}
+.option-row.is-negative{background:var(--neg-bg);}
+.option-row.is-negative:hover{background:#EEF0F5;}
+.cb-wrap{flex-shrink:0;margin-top:1px;}
+.cb-wrap input[type=checkbox]{display:none;}
+.cb-box{width:18px;height:18px;border:2px solid var(--border);border-radius:5px;background:#fff;display:flex;align-items:center;justify-content:center;transition:all .15s;cursor:pointer;flex-shrink:0;}
+.cb-wrap input:checked+.cb-box{background:var(--navy);border-color:var(--navy);}
+.cb-wrap input:checked+.cb-box::after{content:'';width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px);display:block;}
+.is-negative .cb-wrap input:checked+.cb-box{background:var(--neg-text);border-color:var(--neg-text);}
+.option-content{flex:1;display:flex;flex-direction:column;gap:6px;padding-left:12px;}
+.option-label{font-size:13px;color:var(--text);line-height:1.45;cursor:pointer;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.option-label-text{flex:1;}
+.status-badge{font-size:10px;font-weight:600;letter-spacing:.06em;padding:2px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0;text-transform:uppercase;}
+.status-ok{background:var(--ok-bg);color:var(--ok-text);border:1px solid var(--ok-border);}
+.status-bad{background:var(--bad-bg);color:var(--bad-text);border:1px solid var(--bad-border);}
+.soporte-input{width:100%;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-family:inherit;font-size:12px;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s;}
+.soporte-input::placeholder{color:#AEBACF;}
+.soporte-input:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(30,82,153,.12);background:#fff;}
+.is-negative .soporte-input{background:var(--neg-bg);}
+.neg-label-text{color:var(--neg-text);font-style:italic;}
+.actions{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border:none;border-radius:9px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;}
+.btn-primary{background:var(--navy);color:#fff;box-shadow:0 2px 8px rgba(11,43,92,.3);}
+.btn-primary:hover{background:var(--navy-light);transform:translateY(-1px);}
+.btn-secondary{background:#fff;color:var(--text-soft);border:1.5px solid var(--border);}
+.btn-secondary:hover{background:var(--surface);border-color:#B0BAD0;}
+.btn svg{width:15px;height:15px;}
+.summary-bar{position:fixed;bottom:0;left:0;right:0;background:var(--navy);border-top:2px solid var(--gold);padding:10px 24px;display:flex;align-items:center;justify-content:center;gap:32px;z-index:90;box-shadow:0 -4px 20px rgba(11,43,92,.25);}
+.stat-item{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.8);font-size:12px;}
+.stat-val{font-size:16px;font-weight:700;color:var(--gold-light);}
+.stat-divider{width:1px;height:30px;background:rgba(255,255,255,.15);}
+
+  /* ── CONSULTOR en progress-bar ── */
+  .progress-bar-wrap {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .consultant-info {
+    margin-left: auto;
+    text-align: right;
+    line-height: 1.35;
+    flex-shrink: 0;
+  }
+  .consultant-info .ci-name  { font-size: 11px; font-weight: 700; color: var(--gold-light); display: block; white-space: nowrap; }
+  .consultant-info .ci-role  { font-size: 10px; color: rgba(255,255,255,0.75); display: block; }
+  .consultant-info .ci-contact { font-size: 9.5px; color: rgba(255,255,255,0.55); display: block; }
+
+  /* ── TABS ── */
+  .tab-nav {
+    max-width: 860px; margin: 0 auto;
+    padding: 14px 24px 0;
+    display: flex; gap: 6px;
+    background: var(--surface);
+  }
+  .tab-btn {
+    padding: 9px 20px;
+    border: 1.5px solid var(--border); border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    background: #E8ECF5; color: var(--text-soft);
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .tab-btn.active { background: var(--card); color: var(--navy); border-color: var(--border); box-shadow: 0 -2px 8px rgba(11,43,92,0.07); }
+  .tab-btn:hover:not(.active) { background: #D8DDED; }
+  .tab-badge { background: var(--bad-bg); color: var(--bad-text); border: 1px solid var(--bad-border); font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 99px; }
+  .tab-badge.zero { background: #eee; color: #aaa; border-color: #ddd; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── PLAN DE TRABAJO ── */
+  .plan-wrap { max-width: 860px; margin: 0 auto; padding: 28px 24px 80px; }
+  .plan-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .plan-title { font-size: 16px; font-weight: 700; color: var(--navy); }
+  .plan-subtitle { font-size: 12px; color: var(--text-soft); margin-top: 2px; }
+  .plan-empty { text-align: center; padding: 60px 20px; color: var(--text-soft); font-size: 13px; }
+  .plan-empty .icon { font-size: 40px; margin-bottom: 12px; }
+  .plan-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  .plan-table { width: 100%; border-collapse: collapse; font-size: 12px; background: var(--card); }
+  .plan-table th { background: var(--navy); color: #fff; padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; white-space: nowrap; }
+  .plan-table th:first-child { border-radius: 12px 0 0 0; }
+  .plan-table th:last-child  { border-radius: 0 12px 0 0; }
+  .plan-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .plan-table tr:last-child td { border-bottom: none; }
+  .plan-table tr:nth-child(even) td { background: var(--surface); }
+  .plan-table .topic-cell { font-weight: 500; color: var(--navy); max-width: 220px; }
+  .plan-table .code-pill { font-size: 10px; font-weight: 700; background: var(--navy); color: #fff; padding: 2px 7px; border-radius: 99px; display: inline-block; margin-bottom: 4px; }
+  .plan-table input[type=text], .plan-table input[type=date] { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-family: inherit; font-size: 11px; color: var(--text); background: #fff; outline: none; }
+  .plan-table input:focus { border-color: var(--focus); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+  .btn-export-plan { background: var(--gold); color: var(--navy); border: none; border-radius: 8px; padding: 9px 18px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .btn-export-plan:hover { background: var(--gold-light); }
+
+
+  /* ── BANNER IDENTIFICACIÓN ── */
+  .ident-banner {
+    background: linear-gradient(135deg, #0B2B5C 0%, #153D7A 100%);
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    box-shadow: 0 3px 20px rgba(11,43,92,0.35);
+  }
+  .ident-inner {
+    max-width: 860px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+  }
+  .ident-field {
+    display: flex; flex-direction: column; flex: 1; min-width: 160px;
+  }
+  .ident-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.55); text-transform: uppercase; margin-bottom: 4px;
+  }
+  .ident-input {
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 7px;
+    padding: 7px 11px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 12px; color: #fff;
+    outline: none; width: 100%;
+  }
+  .ident-input::placeholder { color: rgba(255,255,255,0.35); }
+  .ident-input:focus { border-color: #C8A951; background: rgba(255,255,255,0.15); }
+  .ident-required { color: #F0D98A; }
+  .ident-alert {
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #B03020; color: #fff; border-radius: 10px;
+    padding: 12px 24px; font-size: 13px; font-weight: 600;
+    z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s;
+  }
+  .ident-success {
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #1A6B3C; color: #fff; border-radius: 10px;
+    padding: 12px 24px; font-size: 13px; font-weight: 600;
+    z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s;
+  }
+  @keyframes fadeIn { from { opacity:0; top:10px; } to { opacity:1; top:20px; } }
+
+</style>
+</head>
+<body>
+
+<!-- BANNER IDENTIFICACIÓN -->
+<div class="ident-banner">
+  <div class="ident-inner">
+    <div class="ident-field">
+      <span class="ident-label">Nombre completo <span class="ident-required">*</span></span>
+      <input class="ident-input" type="text" id="ident_nombre" placeholder="Funcionario que diligencia…">
+    </div>
+    <div class="ident-field">
+      <span class="ident-label">Dependencia / Área <span class="ident-required">*</span></span>
+      <input class="ident-input" type="text" id="ident_dependencia" placeholder="Secretaría, Despacho, Área…">
+    </div>
+    <div class="ident-field" style="max-width:120px;min-width:100px">
+      <span class="ident-label">Vigencia <span class="ident-required">*</span></span>
+      <input class="ident-input" type="number" id="ident_vigencia" placeholder="2024" min="2020" max="2030">
+    </div>
+  </div>
+</div>
+<div class="ident-alert" id="identAlert">⚠️ Complete Nombre, Dependencia y Vigencia antes de guardar.</div>
+<div class="ident-success" id="identSuccess">✅ Respuestas enviadas correctamente a Google Sheets.</div>
+<!-- FIN BANNER -->
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-icon">💡</div>
+    <div class="header-text">
+      <div class="eyebrow">Función Pública · Índice GCI · Gestión del Conocimiento e Innovación</div>
+      <h1>Autodiagnóstico de Gestión del Conocimiento e Innovación</h1>
+      <div class="subtitle">Marque las opciones que aplican y registre el soporte correspondiente</div>
+    </div>
+    <div class="score-pill">
+      <div class="score-val" id="total">0</div>
+      <div class="score-label">Puntos</div>
+    </div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">0 / 0 opciones</div>
+      <div class="consultant-info">
+        <span class="ci-name">Ilder Luis Palta Velasco</span>
+        <span class="ci-role">Consultor Organizacional</span>
+        <span class="ci-contact">📱 317 297 1922 · ✉️ luispalta@gmail.com</span>
+      </div>
+  </div>
+</div>
+<div class="tab-nav">
+  <button class="tab-btn active" id="tab-diag" onclick="switchTab('diag')">📋 Autodiagnóstico</button>
+  <button class="tab-btn" id="tab-plan" onclick="switchTab('plan')">🗂️ Plan de Trabajo <span class="tab-badge zero" id="planBadge">0</span></button>
+</div>
+<div class="tab-panel active" id="panel-diag">
+<div class="main" id="mainContent"></div>
+</div><!-- cierre panel-diag -->
+
+<div class="tab-panel" id="panel-plan">
+  <div class="plan-wrap">
+    <div class="plan-header-row">
+      <div>
+        <div class="plan-title">🗂️ Plan de Trabajo</div>
+        <div class="plan-subtitle">Opciones marcadas como <strong>Priorizar</strong> — complete fechas, entregable y responsable</div>
+      </div>
+      <button class="btn-export-plan" onclick="exportarPlan()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar Plan (JSON)
+      </button>
+    </div>
+    <div id="planContent">
+      <div class="plan-empty"><div class="icon">✅</div>Sin ítems a priorizar.<br>Complete el autodiagnóstico primero.</div>
+    </div>
+  </div>
+</div>
+
+<div class="main" style="padding-top:0">
+  <div class="actions">
+    <button class="btn btn-primary" onclick="guardar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Guardar resultado
+    </button>
+    <button class="btn btn-secondary" onclick="limpiar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
+      Limpiar todo
+    </button>
+  </div>
+</div>
+<div class="summary-bar">
+  <div class="stat-item"><span>Puntaje total:</span><span class="stat-val" id="total2">0</span><span>pts</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat-item"><span>Seleccionadas:</span><span class="stat-val" id="checkedCount">0</span></div>
+  <div class="stat-divider"></div>
+  <div class="stat-item"><span>A priorizar:</span><span class="stat-val" id="pendingCount">0</span></div>
+</div>
+<script>
+const POINTS_PER = 0.8064516129;
+const questions = [
+  {
+    "id": "GCI200",
+    "text": "¿Qué acciones ha realizado la entidad para implementar la política de gestión del conocimiento y la innovación?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Identificó y analizó el estado de la implementación de la política a través de herramientas e instrumentos"
+      },
+      {
+        "neg": 0,
+        "label": "Analizó el contexto organizacional teniendo en cuenta las condiciones para la implementación de la política: personas, procesos y tecnologías con las que cuenta la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Formuló una planeación estratégica basada en el análisis del estado de implementación de la política y del contexto organizacional"
+      },
+      {
+        "neg": 0,
+        "label": "Ejecutó la planeación estratégica establecida para fortalecer o implementar la política y documentó los resultados obtenidos"
+      },
+      {
+        "neg": 0,
+        "label": "Realizó seguimiento y evaluación a los resultados obtenidos a través de la ejecución en la planeación estratégica definida para la vigencia"
+      },
+      {
+        "neg": 0,
+        "label": "Otras. ¿Cuáles?:"
+      },
+      {
+        "neg": 1,
+        "label": "No ha llevado a cabo acciones para implementar la política"
+      }
+    ]
+  },
+  {
+    "id": "GCI201",
+    "text": "¿Qué recursos dispuso la entidad para llevar a cabo la implementación de la Política de Gestión del Conocimiento y la Innovación?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Definió una persona para liderar la implementación de la política de gestión del conocimiento y la innovación"
+      },
+      {
+        "neg": 0,
+        "label": "Conformó un equipo de trabajo para liderar la implementación de la política"
+      },
+      {
+        "neg": 0,
+        "label": "Contaba con espacios físicos destinados al desarrollo de acciones para la gestión del conocimiento y la innovación publica"
+      },
+      {
+        "neg": 0,
+        "label": "Dispuso recursos económicos destinados específicamente para llevar a cabo la implementación de la política"
+      },
+      {
+        "neg": 0,
+        "label": "Dispuso de infraestructura tecnológica para desarrollar la gestión del conocimiento y la innovación: repositorios, micrositio, software para analítica institucional, conectividad, entre otros"
+      },
+      {
+        "neg": 0,
+        "label": "Definió procesos y procedimientos que permitan el desarrollo de la política"
+      },
+      {
+        "neg": 0,
+        "label": "Contaba con instrumentos y herramientas diligenciados, actualizados, sistematizados y/o socializados para llevar a cabo el desarrollo del plan de acción de la política"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GCI204",
+    "text": "¿Cuáles de los siguientes elementos describen la cultura organizacional de la gestión del conocimiento y la innovación en la entidad?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "La capacitación continua de los servidores para fortalecer sus capacidades de gestión innovadora"
+      },
+      {
+        "neg": 0,
+        "label": "La mutua colaboración y el aprendizaje permanente entre los sus equipos de trabajo"
+      },
+      {
+        "neg": 0,
+        "label": "El desarrollo de mesas, talleres o espacios de análisis, ideación, co-creación o prototipado de soluciones"
+      },
+      {
+        "neg": 0,
+        "label": "La documentación, sistematización o evaluación de las experiencias de gestión e innovación en la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Otra. ¿Cuál?:"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GCI205",
+    "text": "Respecto al desarrollo de actividades de investigación durante la vigencia evaluada, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Incorporó elementos asociados a la investigación en su planeación estratégica"
+      },
+      {
+        "neg": 0,
+        "label": "Identificó sus necesidades de investigación"
+      },
+      {
+        "neg": 0,
+        "label": "Gestionó investigaciones a través de equipos internos y/o alianzas estratégicas con otras organizaciones"
+      },
+      {
+        "neg": 0,
+        "label": "Generó documentos técnicos, guías, protocolos, manuales, instructivos, artículos, propuestas de cambio normativo, entre otros como resultado de sus investigaciones"
+      },
+      {
+        "neg": 0,
+        "label": "Contó con un repositorio donde organiza, clasifica y conserva la documentación generada por sus investigaciones"
+      },
+      {
+        "neg": 0,
+        "label": "Socializó los resultados de sus investigaciones a nivel interno y/o externo"
+      },
+      {
+        "neg": 0,
+        "label": "Utilizó los resultados de las investigaciones que realiza para desarrollar productos, servicios o tomar decisiones"
+      },
+      {
+        "neg": 0,
+        "label": "Involucró tanto a actores internos como externos"
+      },
+      {
+        "neg": 0,
+        "label": "Otro. ¿Cuál?:   Se adelantaron espacios como la escuela innova para el intercambio de experiencias"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no desarrolló actividades de investigación"
+      }
+    ]
+  },
+  {
+    "id": "GCI206",
+    "text": "¿La entidad contó con mecanismos para identificar y priorizar las necesidades de investigación relacionadas con temas estratégicos o misionales?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GCI207",
+    "text": "En relación con los procesos de ideación, creación o validación en el marco de la innovación, la entidad ha incluido a:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sus servidores"
+      },
+      {
+        "neg": 0,
+        "label": "A los tomadores de decisión"
+      },
+      {
+        "neg": 0,
+        "label": "A los grupos de valor o de interés"
+      },
+      {
+        "neg": 0,
+        "label": "Otro. ¿Cuál?:"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GCI208",
+    "text": "¿La entidad llevó a cabo procesos de innovación?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "No"
+      }
+    ]
+  },
+  {
+    "id": "GCI209",
+    "text": "¿Qué actividades de innovación se han aplicado en la entidad?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Se han implementado prácticas innovadoras de otras entidades"
+      },
+      {
+        "neg": 0,
+        "label": "Participación en conferencias o eventos de innovación"
+      },
+      {
+        "neg": 0,
+        "label": "Se han realizado pruebas y validaciones de alternativas de solución (prototipos), antes de lanzarse e implementar como “solución final”"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GCI210",
+    "text": "La innovación en los procesos de la entidad ha contribuido a:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Fortalecer y mejorar la interacción con sus servidores, otras entidades y ciudadanías"
+      },
+      {
+        "neg": 0,
+        "label": "Generar servicios y productos novedosos o mejorados"
+      },
+      {
+        "neg": 0,
+        "label": "Aprovechar el conocimiento disponible para aumentar la efectividad de su gestión"
+      },
+      {
+        "neg": 0,
+        "label": "Mejorar la eficiencia administrativa, el diseño y el funcionamiento organizacional"
+      },
+      {
+        "neg": 0,
+        "label": "Racionalizar sus trámites y agilizar su gestión"
+      },
+      {
+        "neg": 0,
+        "label": "Otra. ¿Cuál?:"
+      },
+      {
+        "neg": 1,
+        "label": "La entidad no ha realizado un balance de la gestión de la innovación en sus procesos"
+      }
+    ]
+  },
+  {
+    "id": "GCI211",
+    "text": "Con respecto a las herramientas de uso y apropiación para la gestión del conocimiento y la innovación, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Adoptó o diseñó y aplicó herramientas tomando en cuenta los ejes de la política de gestión del conocimiento y la innovación"
+      },
+      {
+        "neg": 0,
+        "label": "Validó la calidad y aplicación al interior de la entidad de las herramientas de uso y apropiación"
+      },
+      {
+        "neg": 0,
+        "label": "Organizó sus datos, información y conocimiento respecto a prácticas de innovación en diferentes herramientas, para que puedan ser usados de manera constante y organizada por los servidores de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Estableció necesidades para incorporar nuevas herramientas de uso y apropiación"
+      },
+      {
+        "neg": 0,
+        "label": "Hizo un diagnóstico del conocimiento que se encuentra en la entidad y el requerido para el óptimo desempeño de sus funciones en las diferentes áreas"
+      },
+      {
+        "neg": 0,
+        "label": "Identificó, clasificó y gestionó el conocimiento tácito y explícito para establecer necesidades de nuevo conocimiento o actualizar el existente"
+      },
+      {
+        "neg": 0,
+        "label": "Contó con repositorios de conocimiento, bibliotecas virtuales o alguna base de datos para alojar información"
+      },
+      {
+        "neg": 0,
+        "label": "Gestionó y actualizó inventarios para registrar la ubicación de instrumentos con conocimiento estratégico para la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Contó con una página web actualizada para disponer documentos y productos realizados por la entidad de interés para las ciudadanías"
+      },
+      {
+        "neg": 0,
+        "label": "Otro. ¿Cuál?:"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GCI212",
+    "text": "¿Cuáles son las fortalezas para innovar dentro de la entidad?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Existe un liderazgo directivo que promueve y reconoce las iniciativas innovadoras"
+      },
+      {
+        "neg": 0,
+        "label": "Se disponen acciones, tiempos y recursos para implementar procesos de innovación"
+      },
+      {
+        "neg": 0,
+        "label": "La cultura organizacional promueve la innovación como práctica entre los colaboradores"
+      },
+      {
+        "neg": 0,
+        "label": "Se desarrollan capacitaciones orientadas a la gestión y al fortalecimiento del proceso de la innovación"
+      },
+      {
+        "neg": 0,
+        "label": "La gestión de la innovación está incluida en la planeación estratégica o en el mapa de procesos de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Se cuenta con recursos (humanos, infraestructura o económicos) para desarrollar o implementar soluciones innovadoras"
+      },
+      {
+        "neg": 0,
+        "label": "Se cuenta con una estrategia de articulación para trabajar temas de innovación con otras entidades"
+      },
+      {
+        "neg": 0,
+        "label": "Otro. ¿Cuál?: Se cuenta con redes de conocimiento e intercambio de experiencias que se comparten en la escuela innova y en el cafe de conocimiento como espacio de encuentro y socialización"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GCI213",
+    "text": "Durante la vigencia evaluada, ¿Qué factores o barreras incidieron en los esfuerzos para desarrollar innovación en la entidad?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Resistencia al cambio entre líderes, servidores o sus equipos de trabajo"
+      },
+      {
+        "neg": 0,
+        "label": "Talento humano insuficiente"
+      },
+      {
+        "neg": 0,
+        "label": "Infraestructura física inadecuada"
+      },
+      {
+        "neg": 0,
+        "label": "Recursos financieros insuficientes"
+      },
+      {
+        "neg": 0,
+        "label": "Regulación vigente"
+      },
+      {
+        "neg": 0,
+        "label": "Incentivos y reconocimientos para el personal insuficientes"
+      },
+      {
+        "neg": 0,
+        "label": "Liderazgos poco o nada flexibles"
+      },
+      {
+        "neg": 0,
+        "label": "Otro. ¿Cuál?:"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GCI214",
+    "text": "¿Qué acciones desarrolló la entidad para preservar y compartir el conocimiento de los servidores públicos?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Clasificó el conocimiento asociado a la formación, capacitación y experiencia del recurso humano para proponer acciones de formación de acuerdo con su análisis"
+      },
+      {
+        "neg": 0,
+        "label": "Diseñó mecanismos, procedimientos o procesos para socializar o transferir (adoptar y adaptar) el conocimiento"
+      },
+      {
+        "neg": 0,
+        "label": "Implementó acciones para que los servidores compartan y transfieran el conocimiento"
+      },
+      {
+        "neg": 0,
+        "label": "Aplicó herramientas para preservar el conocimiento tácito de los servidores"
+      },
+      {
+        "neg": 0,
+        "label": "Identificó y gestionó los riesgos relacionados con la fuga de conocimiento a través del establecimiento planes de mitigación y preservación del conocimiento"
+      },
+      {
+        "neg": 0,
+        "label": "Identificó, documentó y socializó buenas prácticas, lecciones aprendidas y casos de éxito"
+      },
+      {
+        "neg": 0,
+        "label": "Favoreció la colaboración y aprendizaje entre sus servidores y sus equipos de trabajo a través de canales formales e informales de comunicación efectiva y por medio de espacios (tiempo y lugar) claramente definidos"
+      },
+      {
+        "neg": 0,
+        "label": "Realizó procesos de divulgación y transferencia para facilitar el intercambio de conocimiento entre las personas de la entidad, otras entidades y ciudadanías"
+      },
+      {
+        "neg": 0,
+        "label": "Otras acciones. ¿Cuáles?:"
+      },
+      {
+        "neg": 1,
+        "label": "No ha desarrollado acciones para preservar y compartir el conocimiento"
+      }
+    ]
+  },
+  {
+    "id": "GCI215",
+    "text": "Para mitigar el riesgo de fuga de conocimiento, la entidad desarrollo las siguientes acciones:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Documentó, a manera de un inventario o esquema similar, el conocimiento de los servidores, de carácter estratégico para la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Realizó procesos de socialización y difusión del conocimiento al interior y exterior"
+      },
+      {
+        "neg": 0,
+        "label": "Estableció procedimientos de entrega de cargo o de terminación de contrato y mecanismos de transferencia de conocimiento"
+      },
+      {
+        "neg": 0,
+        "label": "Documentó el conocimiento explícito a partir del conocimiento tácito de sus servidores"
+      },
+      {
+        "neg": 0,
+        "label": "Actualizó sus Tablas de Retención Documental - TRD de acuerdo con el quehacer de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Otro. ¿Cuál?:"
+      },
+      {
+        "neg": 1,
+        "label": "No realizó ninguna actividad para mitigar la fuga de conocimiento"
+      }
+    ]
+  },
+  {
+    "id": "GCI216",
+    "text": "La entidad realizó las siguientes acciones de enseñanza-aprendizaje durante la vigencia evaluada:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Promovió iniciativas para la transferencia, socialización y apropiación del conocimiento entre sus servidores"
+      },
+      {
+        "neg": 0,
+        "label": "Generó proyectos de aprendizaje en equipo o aprendizaje interinstitucional"
+      },
+      {
+        "neg": 0,
+        "label": "Ejecutó procesos de capacitación para sus servidores e implementó mecanismos de socialización de dichos aprendizajes"
+      },
+      {
+        "neg": 0,
+        "label": "Desarrolló herramientas o instrumentos para compartir el conocimiento y mejorar su apropiación en la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Estableció convenios, acuerdos o esquemas de trabajo colaborativo para fortalecer el conocimiento de los servidores de la entidad"
+      },
+      {
+        "neg": 0,
+        "label": "Otra. ¿Cuál?:"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GCI217",
+    "text": "¿Mediante qué acciones la entidad colaboró con otras entidades para la producción y generación de datos, información, investigaciones, desarrollos tecnológicos y documentos?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Generó proyectos y metas compartidas de fortalecimiento institucional"
+      },
+      {
+        "neg": 0,
+        "label": "Colaboró en la gestión de proyectos de investigación o innovación relacionados con su misión institucional"
+      },
+      {
+        "neg": 0,
+        "label": "Participó en redes de conocimiento"
+      },
+      {
+        "neg": 0,
+        "label": "Participó en comunidades de saberes y prácticas"
+      },
+      {
+        "neg": 0,
+        "label": "Otra. ¿Cuál?:"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GCI218",
+    "text": "Respecto a sus buenas prácticas y lecciones aprendidas, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Identificó sus buenas prácticas (experiencias significativas) y lecciones aprendidas"
+      },
+      {
+        "neg": 0,
+        "label": "Documentó sus buenas prácticas (experiencias significativas) y lecciones aprendidas"
+      },
+      {
+        "neg": 0,
+        "label": "Dispuso y organizó repositorios de buenas prácticas (experiencias significativas) y lecciones aprendidas"
+      },
+      {
+        "neg": 0,
+        "label": "Socializó sus buenas prácticas (experiencias significativas) y lecciones aprendidas al interior de la entidad y/o con grupos interesados externos"
+      },
+      {
+        "neg": 1,
+        "label": "No identificó buenas prácticas (experiencias significativas) ni lecciones aprendidas"
+      }
+    ]
+  },
+  {
+    "id": "GCI219",
+    "text": "Indique los datos de contacto institucionales del líder de la política en la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Nombre de la persona:"
+      },
+      {
+        "neg": 0,
+        "label": "Correo electrónico:"
+      },
+      {
+        "neg": 0,
+        "label": "Cargo:"
+      },
+      {
+        "neg": 0,
+        "label": "Área o dependencia:"
+      }
+    ]
+  },
+  {
+    "id": "GCI220",
+    "text": "¿En cuál o cuáles temáticas de la gestión de la innovación se promovieron formaciones o capacitaciones?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "En metodologías para identificar problemas"
+      },
+      {
+        "neg": 0,
+        "label": "En generación y diseño de soluciones innovadoras"
+      },
+      {
+        "neg": 0,
+        "label": "En aplicación y/o implementación de soluciones innovadoras"
+      },
+      {
+        "neg": 0,
+        "label": "En sistematización de experiencias significativas o análisis de resultados en innovación"
+      },
+      {
+        "neg": 0,
+        "label": "En evaluación y control de los resultados de innovaciones"
+      },
+      {
+        "neg": 0,
+        "label": "Otro. ¿Cuál?:"
+      },
+      {
+        "neg": 1,
+        "label": "No, ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GCI222",
+    "text": "Respecto a los procesos de innovación pública la entidad cuenta con:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Instancias/equipos de colaboración interna"
+      },
+      {
+        "neg": 0,
+        "label": "Áreas que promuevan el desarrollo de iniciativas de innovación pública"
+      },
+      {
+        "neg": 0,
+        "label": "Objetivos estratégicos relacionados con innovación pública"
+      },
+      {
+        "neg": 0,
+        "label": "Otro. ¿Cuál?:"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GCI223",
+    "text": "Durante el último año, la entidad ha propiciado la participación activa de servidores y ciudadanías en alguna de las siguientes fases de la innovación:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Identificación de problemas, retos u oportunidades"
+      },
+      {
+        "neg": 0,
+        "label": "Creación conjunta de soluciones"
+      },
+      {
+        "neg": 0,
+        "label": "Validación o experimentación de prototipos de solución"
+      },
+      {
+        "neg": 0,
+        "label": "En sistematización de experiencias significativas o análisis de resultados en innovación"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GCI224",
+    "text": "Respecto a la analítica de datos, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Conoce conceptos básicos y herramientas de aplicación de analítica institucional"
+      },
+      {
+        "neg": 0,
+        "label": "Existe un liderazgo directivo que promueve y reconoce las iniciativas de analítica institucional"
+      },
+      {
+        "neg": 0,
+        "label": "Se disponen acciones, tiempos y recursos para implementar procesos de analítica institucional"
+      },
+      {
+        "neg": 0,
+        "label": "Se desarrollan capacitaciones orientadas al fortalecimiento del proceso de analítica institucional"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GCI225",
+    "text": "Respecto a la gestión de la innovación, durante la vigencia evaluada, la entidad:",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Tenía algún objetivo estratégico relacionado con innovación"
+      },
+      {
+        "neg": 0,
+        "label": "Contaba con un entorno normativo vigente que reglamente y favorezca el desarrollo de la innovación"
+      },
+      {
+        "neg": 0,
+        "label": "Disponía de instancias de colaboración interna para el desarrollo de iniciativas de innovación"
+      },
+      {
+        "neg": 0,
+        "label": "Promovió el trabajo interinstitucional"
+      },
+      {
+        "neg": 0,
+        "label": "Contaba con una estructura que apoye el trabajo entre las diferentes áreas (trabajo colaborativo al interior de la entidad)"
+      },
+      {
+        "neg": 1,
+        "label": "Ninguna de las anteriores"
+      }
+    ]
+  },
+  {
+    "id": "GCI226",
+    "text": "¿En cuáles de las siguientes fases de la innovación, la entidad contó con la participación activa de las personas usuarias / beneficiarias?",
+    "tipo": "Selección múltiple",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Identificación de problemas u oportunidades"
+      },
+      {
+        "neg": 0,
+        "label": "Creación conjunta de soluciones"
+      },
+      {
+        "neg": 0,
+        "label": "Validación de prototipos de solución"
+      }
+    ]
+  },
+  {
+    "id": "GCI227",
+    "text": "¿Durante el último año la entidad llevó a cabo capacitaciones para promover las habilidades y capacidades de sus servidores relacionadas a la gestión de la innovación?",
+    "tipo": "Selección única",
+    "options": [
+      {
+        "neg": 0,
+        "label": "Sí, y cuenta con las evidencias:"
+      },
+      {
+        "neg": 1,
+        "label": "NO"
+      }
+    ]
+  }
+];
+
+function buildUI(){
+  const main=document.getElementById('mainContent');
+  main.innerHTML='';
+  questions.forEach(q=>{
+    const card=document.createElement('div');
+    card.className='card';
+    card.innerHTML=`
+      <div class="card-score-bar"><div class="card-score-fill" id="bar_${q.id}"></div></div>
+      <div class="card-header">
+        <span class="card-code">${q.id}</span>
+        <span class="card-question">${q.text}<span class="tipo-badge">${q.tipo}</span></span>
+      </div>
+      <div class="card-body" id="body_${q.id}"></div>
+    `;
+    const body=card.querySelector(`#body_${q.id}`);
+    q.options.forEach((opt,idx)=>{
+      const row=document.createElement('div');
+      row.className='option-row'+(opt.neg?' is-negative':'');
+      const cbId=`cb_${q.id}_${idx}`;
+      row.innerHTML=`
+        <div class="cb-wrap">
+          <input type="checkbox" id="${cbId}" data-q="${q.id}" data-neg="${opt.neg}" value="${opt.neg?0:POINTS_PER}">
+          <label class="cb-box" for="${cbId}"></label>
+        </div>
+        <div class="option-content">
+          <label class="option-label" for="${cbId}">
+            <span class="option-label-text ${opt.neg?'neg-label-text':''}">${opt.label}</span>
+            ${opt.neg===0?`<span class="status-badge status-bad" id="badge_${cbId}" style="display:none">Priorizar</span>`:''}
+          </label>
+          <input type="text" class="soporte-input" placeholder="Soporte / link / texto">
+        </div>
+      `;
+      body.appendChild(row);
+    });
+    main.appendChild(card);
+  });
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',actualizar));
+  actualizar();
+}
+
+function actualizar(){
+  calcular();actualizarEstados();actualizarProgress();
+}
+
+function calcular(){
+  let total=0;
+  const groups={};
+  document.querySelectorAll('input[type=checkbox]').forEach(ch=>{
+    const q=ch.dataset.q;
+    if(!groups[q])groups[q]=[];
+    groups[q].push(ch);
+  });
+  for(const q in groups){
+    const neg=groups[q].some(ch=>ch.checked&&ch.dataset.neg==='1');
+    if(neg)continue;
+    groups[q].forEach(ch=>{if(ch.checked)total+=parseFloat(ch.value);});
+  }
+  const fmt=total.toFixed(2);
+  document.getElementById('total').textContent=fmt;
+  document.getElementById('total2').textContent=fmt;
+  questions.forEach(q=>{
+    const g=groups[q.id]||[];
+    const neg=g.some(ch=>ch.checked&&ch.dataset.neg==='1');
+    let pts=0;
+    if(!neg)g.forEach(ch=>{if(ch.checked)pts+=parseFloat(ch.value);});
+    const max=q.options.filter(o=>o.neg===0).length*POINTS_PER;
+    const bar=document.getElementById(`bar_${q.id}`);
+    if(bar)bar.style.width=max>0?Math.min(100,(pts/max)*100)+'%':'0%';
+  });
+}
+
+function actualizarEstados(){
+  const touchedGroups={};
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    if(cb.checked)touchedGroups[cb.dataset.q]=true;
+  });
+  let checked=0,pending=0;
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    if(cb.dataset.neg==='1')return;
+    const badge=document.getElementById('badge_'+cb.id);
+    if(!badge)return;
+    const touched=touchedGroups[cb.dataset.q]||false;
+    if(cb.checked){
+      badge.textContent='Mantener y mejorar';
+      badge.className='status-badge status-ok';
+      badge.style.display='';
+      checked++;
+    } else if(touched){
+      badge.textContent='Priorizar';
+      badge.className='status-badge status-bad';
+      badge.style.display='';
+      pending++;
+    } else {
+      badge.style.display='none';
+    }
+  });
+  document.getElementById('checkedCount').textContent=checked;
+  document.getElementById('pendingCount').textContent=pending;
+}
+
+function actualizarProgress(){
+  const all=document.querySelectorAll('input[type=checkbox]');
+  let done=0;all.forEach(cb=>{if(cb.checked)done++;});
+  const pct=all.length>0?(done/all.length)*100:0;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressLabel').textContent=`${done} / ${all.length} opciones`;
+}
+
+function limpiar(){
+  document.querySelectorAll('input').forEach(i=>{
+    if(i.type==='checkbox')i.checked=false;
+    if(i.type==='text')i.value='';
+  });
+  actualizar();
+}
+
+function guardar() {
+  // Validar identificación
+  const nombre = (document.getElementById('ident_nombre')?.value || '').trim();
+  const dependencia = (document.getElementById('ident_dependencia')?.value || '').trim();
+  const vigencia = (document.getElementById('ident_vigencia')?.value || '').trim();
+  if (!nombre || !dependencia || !vigencia) {
+    const al = document.getElementById('identAlert');
+    if (al) { al.style.display = 'block'; setTimeout(()=>{ al.style.display='none'; }, 3500); }
+    return;
+  }
+
+  // Recoger respuestas
+  const data = [];
+  questions.forEach(q => {
+    const body = document.getElementById(`body_${q.id}`);
+    if (!body) return;
+    body.querySelectorAll('.option-row').forEach((row, idx) => {
+      const cb = row.querySelector('input[type=checkbox]');
+      const txt = row.querySelector('input[type=text]');
+      const badge = row.querySelector('.status-badge');
+      data.push({
+        pregunta: q.text,
+        codigo: q.id,
+        opcion: q.options[idx]?.label || '',
+        seleccionado: cb ? cb.checked : false,
+        soporte: txt ? txt.value : '',
+        estado: badge ? badge.textContent : ''
+      });
+    });
+  });
+
+  const puntaje = parseFloat(document.getElementById('total')?.textContent || '0');
+  const seleccionadas = parseInt(document.getElementById('checkedCount')?.textContent || '0');
+  const priorizar = parseInt(document.getElementById('pendingCount')?.textContent || '0');
+
+  const output = {
+    fecha_envio: new Date().toISOString(),
+    nombre_funcionario: nombre,
+    dependencia: dependencia,
+    vigencia: vigencia,
+    puntaje_total: puntaje,
+    total_seleccionadas: seleccionadas,
+    a_priorizar: priorizar,
+    respuestas: data
+  };
+
+  // 1. Enviar a Google Sheets via Apps Script
+  const SCRIPT_URL = 'REEMPLAZAR_CON_URL_DE_APPS_SCRIPT';
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(output)
+  }).then(() => {
+    const ok = document.getElementById('identSuccess');
+    if (ok) { ok.style.display = 'block'; setTimeout(()=>{ ok.style.display='none'; }, 4000); }
+  }).catch((err) => {
+    console.error('Error enviando a Sheets:', err);
+  });
+
+  // 2. Descargar JSON de respaldo
+
+  const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download='autodiagnostico_GCI.json';
+  a.click();
+}
+
+buildUI();
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'plan') renderPlan();
+}
+
+function getPlanItems() {
+  const rows = [];
+  questions.forEach(q => {
+    const body = document.getElementById('body_' + q.id);
+    if (!body) return;
+    const groupTouched = document.querySelector('input[data-q="' + q.id + '"]:checked');
+    if (!groupTouched) return;
+    body.querySelectorAll('.option-row').forEach((row, idx) => {
+      const cb = row.querySelector('input[type=checkbox]');
+      if (!cb || cb.dataset.neg === '1' || cb.checked) return;
+      rows.push({ qid: q.id, label: q.options[idx]?.label || '' });
+    });
+  });
+  return rows;
+}
+
+function updatePlanBadge() {
+  const badge = document.getElementById('planBadge');
+  if (!badge) return;
+  const n = getPlanItems().length;
+  badge.textContent = n;
+  badge.className = 'tab-badge' + (n === 0 ? ' zero' : '');
+}
+
+function renderPlan() {
+  updatePlanBadge();
+  const rows = getPlanItems();
+  const cont = document.getElementById('planContent');
+  if (!cont) return;
+  if (rows.length === 0) {
+    cont.innerHTML = '<div class="plan-empty"><div class="icon">✅</div>Sin ítems a priorizar todavía.<br>Complete el autodiagnóstico primero.</div>';
+    return;
+  }
+  let html = '<div class="plan-table-wrap"><table class="plan-table"><thead><tr><th>#</th><th>Código</th><th>Tema a Priorizar</th><th>Tarea a Realizar</th><th>Fecha Inicio</th><th>Fecha Final</th><th>Entregable</th><th>Responsable</th></tr></thead><tbody>';
+  rows.forEach((r, i) => {
+    const lbl = r.label.length > 90 ? r.label.substring(0, 90) + '…' : r.label;
+    html += `<tr><td style="text-align:center;color:var(--text-soft);font-weight:600">${i+1}</td><td><span class="code-pill">${r.qid}</span></td><td class="topic-cell">${lbl}</td><td><input type="text" id="pt_${i}_tarea" placeholder="Describir la tarea…"></td><td><input type="date" id="pt_${i}_inicio"></td><td><input type="date" id="pt_${i}_fin"></td><td><input type="text" id="pt_${i}_entregable" placeholder="Documento, informe…"></td><td><input type="text" id="pt_${i}_resp" placeholder="Nombre o cargo"></td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+
+function exportarPlan() {
+  const cont = document.getElementById('planContent');
+  if (!cont) return;
+  const filas = cont.querySelectorAll('tbody tr');
+  if (!filas.length) { alert('No hay ítems en el plan de trabajo.'); return; }
+  const plan = [];
+  filas.forEach((tr, i) => {
+    const tds = tr.querySelectorAll('td');
+    plan.push({ numero: i+1, codigo: tds[1]?.querySelector('.code-pill')?.textContent||'', tema: tds[2]?.textContent?.trim()||'', tarea: document.getElementById('pt_'+i+'_tarea')?.value||'', fecha_inicio: document.getElementById('pt_'+i+'_inicio')?.value||'', fecha_fin: document.getElementById('pt_'+i+'_fin')?.value||'', entregable: document.getElementById('pt_'+i+'_entregable')?.value||'', responsable: document.getElementById('pt_'+i+'_resp')?.value||'' });
+  });
+  const blob = new Blob([JSON.stringify({plan_de_trabajo: plan}, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan_de_trabajo.json'; a.click();
+}
+
+const _orig = actualizarFormulario;
+actualizarFormulario = function() { _orig(); updatePlanBadge(); };
+
+</script>
+</body>
+</html>
