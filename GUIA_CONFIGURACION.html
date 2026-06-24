@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía de Configuración — Autodiagnósticos en Línea</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  :root {
+    --navy: #0B2B5C; --navy-mid: #153D7A;
+    --gold: #C8A951; --gold-light: #F0D98A;
+    --surface: #F5F7FB; --card: #fff;
+    --border: #DDE3EE; --text: #1A2340; --text-soft: #5A6480;
+    --green: #1A6B3C; --green-bg: #E6F4EC;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--surface); color: var(--text); line-height: 1.6; }
+
+  .header { background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%); color: #fff; padding: 32px; }
+  .header h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .header p { font-size: 13px; color: rgba(255,255,255,0.65); }
+
+  .main { max-width: 800px; margin: 0 auto; padding: 32px 24px 60px; }
+
+  .phase {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 16px; margin-bottom: 24px; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(11,43,92,0.06);
+  }
+  .phase-header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+    padding: 16px 24px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .phase-num {
+    width: 36px; height: 36px; flex-shrink: 0;
+    background: var(--gold); color: var(--navy);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 800;
+  }
+  .phase-title { font-size: 15px; font-weight: 700; color: #fff; }
+  .phase-sub { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+  .phase-body { padding: 20px 24px; }
+
+  .step {
+    display: flex; gap: 14px; margin-bottom: 16px;
+    padding-bottom: 16px; border-bottom: 1px solid var(--border);
+  }
+  .step:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .step-icon {
+    width: 32px; height: 32px; flex-shrink: 0;
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .step-content { flex: 1; }
+  .step-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: var(--navy); }
+  .step-desc { font-size: 12px; color: var(--text-soft); }
+
+  code {
+    background: #1A2340; color: #F0D98A;
+    font-family: 'Courier New', monospace;
+    font-size: 11px; padding: 2px 7px; border-radius: 5px;
+    word-break: break-all;
+  }
+  .code-block {
+    background: #1A2340; color: #F0D98A;
+    font-family: 'Courier New', monospace;
+    font-size: 11px; padding: 14px 16px;
+    border-radius: 10px; margin: 10px 0;
+    white-space: pre-wrap; word-break: break-all;
+    line-height: 1.7;
+  }
+  .alert {
+    background: #FFF8E6; border: 1.5px solid #C8A951;
+    border-radius: 10px; padding: 12px 16px;
+    font-size: 12px; color: #7A5A00; margin: 10px 0;
+  }
+  .ok {
+    background: var(--green-bg); border: 1.5px solid #7EC8A0;
+    border-radius: 10px; padding: 12px 16px;
+    font-size: 12px; color: var(--green); margin: 10px 0;
+    font-weight: 500;
+  }
+
+  .summary-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+  .summary-table th { background: var(--navy); color: #fff; padding: 9px 14px; text-align: left; }
+  .summary-table td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+  .summary-table tr:nth-child(even) td { background: var(--surface); }
+
+  .footer { text-align: center; font-size: 11px; color: var(--text-soft); padding: 24px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚙️ Guía de Configuración</h1>
+  <p>Autodiagnósticos en línea con Google Sheets · Alcaldía de Santiago de Cali</p>
+</div>
+
+<div class="main">
+
+  <!-- FASE 1 -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">1</div>
+      <div>
+        <div class="phase-title">Crear la hoja de Google Sheets</div>
+        <div class="phase-sub">Donde quedarán registradas todas las respuestas</div>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="step">
+        <div class="step-icon">📊</div>
+        <div class="step-content">
+          <div class="step-title">Abrir Google Sheets y crear una hoja nueva</div>
+          <div class="step-desc">Ve a <code>sheets.google.com</code> → clic en "+" para crear una hoja nueva → nómbrala <strong>Autodiagnósticos Alcaldía de Cali</strong>.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">🔗</div>
+        <div class="step-content">
+          <div class="step-title">Copiar el ID de la hoja desde la URL</div>
+          <div class="step-desc">En la barra del navegador verás algo así:</div>
+          <div class="code-block">https://docs.google.com/spreadsheets/d/<span style="color:#7EC8A0;font-weight:bold">1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms</span>/edit
+                                                                                      ↑ ESTE ES EL ID ↑</div>
+          <div class="alert">⚠️ Guarda ese ID, lo necesitarás en el paso siguiente.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">📑</div>
+        <div class="step-content">
+          <div class="step-title">Renombrar la primera pestaña</div>
+          <div class="step-desc">Clic derecho en la pestaña inferior → Cambiar nombre → escribe <code>Respuestas</code> (exactamente así, con mayúscula).</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FASE 2 -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">2</div>
+      <div>
+        <div class="phase-title">Instalar el Google Apps Script</div>
+        <div class="phase-sub">El código que recibe los formularios y escribe en Sheets</div>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="step">
+        <div class="step-icon">🛠️</div>
+        <div class="step-content">
+          <div class="step-title">Abrir el editor de Apps Script</div>
+          <div class="step-desc">Desde tu Google Sheet: menú <strong>Extensiones → Apps Script</strong>. Se abre una pestaña nueva.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">📋</div>
+        <div class="step-content">
+          <div class="step-title">Pegar el código</div>
+          <div class="step-desc">Borrar todo lo que hay → abrir el archivo <code>APPS_SCRIPT_SHEETS.js</code> que está en tu carpeta → copiar todo el contenido → pegar en el editor de Apps Script.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">✏️</div>
+        <div class="step-content">
+          <div class="step-title">Reemplazar el ID de la hoja</div>
+          <div class="step-desc">En la línea 35 del código, reemplaza el texto entre comillas con tu ID real:</div>
+          <div class="code-block">// Antes:
+const SHEET_ID = 'PEGA_AQUI_EL_ID_DE_TU_GOOGLE_SHEET';
+
+// Después (ejemplo):
+const SHEET_ID = '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms';</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">💾</div>
+        <div class="step-content">
+          <div class="step-title">Guardar el proyecto</div>
+          <div class="step-desc">Ctrl+S o clic en el ícono de guardar 💾. Ponle un nombre al proyecto cuando lo pida (ej: <em>Receptor Autodiagnósticos</em>).</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">🚀</div>
+        <div class="step-content">
+          <div class="step-title">Publicar como Aplicación Web</div>
+          <div class="step-desc">
+            Clic en <strong>Implementar → Nueva implementación</strong>:<br><br>
+            • Tipo: <code>Aplicación web</code><br>
+            • Descripción: <em>Autodiagnósticos Alcaldía Cali</em><br>
+            • Ejecutar como: <code>Yo (tu correo)</code><br>
+            • Quién puede acceder: <code>Cualquier usuario</code><br><br>
+            → Clic en <strong>Implementar</strong> → Autorizar cuando lo pida → Copiar la <strong>URL de la aplicación web</strong>.
+          </div>
+          <div class="ok">✅ La URL se verá así: https://script.google.com/macros/s/AKfycb.../exec</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FASE 3 -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">3</div>
+      <div>
+        <div class="phase-title">Conectar los formularios con tu Sheets</div>
+        <div class="phase-sub">Reemplazar la URL en los 15 archivos HTML</div>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="step">
+        <div class="step-icon">🔍</div>
+        <div class="step-content">
+          <div class="step-title">Buscar el texto a reemplazar en cada HTML</div>
+          <div class="step-desc">En cada uno de los 15 archivos AUTODIAGNOSTICO_*.html, busca (Ctrl+F en un editor de texto):</div>
+          <div class="code-block">REEMPLAZAR_CON_URL_DE_APPS_SCRIPT</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">✏️</div>
+        <div class="step-content">
+          <div class="step-title">Reemplazar con tu URL real</div>
+          <div class="step-desc">Pega la URL que copiaste en el paso anterior. Ejemplo:</div>
+          <div class="code-block">// Antes:
+const SCRIPT_URL = 'REEMPLAZAR_CON_URL_DE_APPS_SCRIPT';
+
+// Después:
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbXXXXXXX/exec';</div>
+          <div class="alert">⚠️ Consejo: usa Notepad++ o VS Code para hacer el reemplazo en todos los archivos a la vez (Ctrl+Shift+H → Reemplazar en archivos).</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FASE 4 -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">4</div>
+      <div>
+        <div class="phase-title">Publicar los archivos en línea</div>
+        <div class="phase-sub">Para que se puedan diligenciar desde cualquier equipo</div>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="step">
+        <div class="step-icon">🌐</div>
+        <div class="step-content">
+          <div class="step-title">Opción A: Servidor web institucional (recomendado)</div>
+          <div class="step-desc">Sube todos los archivos HTML a la carpeta del servidor web de la Alcaldía. El administrador de TI puede ayudarte. Los archivos funcionan sin ningún backend adicional.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">📂</div>
+        <div class="step-content">
+          <div class="step-title">Opción B: GitHub Pages (gratis y sin servidor)</div>
+          <div class="step-desc">
+            1. Crear cuenta en <code>github.com</code><br>
+            2. Nuevo repositorio → subir todos los archivos HTML<br>
+            3. Settings → Pages → Source: main branch<br>
+            4. Tu URL quedará: <code>https://tuusuario.github.io/autodiagnosticos/</code>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">💡</div>
+        <div class="step-content">
+          <div class="step-title">Opción C: Netlify Drop (más fácil)</div>
+          <div class="step-desc">Ir a <code>app.netlify.com/drop</code> → arrastrar la carpeta completa → en segundos tienes una URL pública con todos los archivos. Gratis.</div>
+        </div>
+      </div>
+      <div class="ok">✅ Una vez publicados, comparte el enlace de <strong>autodiagnosticos.html</strong> y desde ahí los funcionarios acceden a todos los formularios.</div>
+    </div>
+  </div>
+
+  <!-- RESUMEN ARCHIVOS -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num">📁</div>
+      <div>
+        <div class="phase-title">Resumen de archivos entregados</div>
+        <div class="phase-sub">Todos los archivos están en tu carpeta compartida</div>
+      </div>
+    </div>
+    <div class="phase-body">
+      <table class="summary-table">
+        <thead>
+          <tr><th>Archivo</th><th>Descripción</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>autodiagnosticos.html</code></td><td>Portal hub — página principal con los 15 módulos</td></tr>
+          <tr><td><code>AUTODIAGNOSTICO_CCP.html</code></td><td>Compras y Contratación Pública</td></tr>
+          <tr><td><code>AUTODIAGNOSTICO_DJU.html</code></td><td>Defensa Jurídica</td></tr>
+          <tr><td><code>AUTODIAGNOSTICO_FOR.html</code></td><td>Fortalecimiento Organizacional</td></tr>
+          <tr><td><code>AUTODIAGNOSTICO_GCI.html</code></td><td>Gestión del Conocimiento e Innovación</td></tr>
+          <tr><td><code>AUTODIAGNOSTICO_GDI.html</code></td><td>Gobierno Digital</td></tr>
+          <tr><td><code>AUTODIAGNOSTICO_GDO.html</code></td><td>Gestión Documental</td></tr>
+          <tr><td><code>AUTODIAGNOSTICO_GES.html</code></td><td>Gestión Estadística</td></tr>
+          <tr><td><code>AUTODIAGNOSTICO_GTH.html</code></td><td>Gestión del Talento Humano</td></tr>
+          <tr><td><code>AUTODIAGNOSTICO_INTEGRIDAD.html</code></td><td>Integridad Pública</td></tr>
+          <tr><td><code>AUTODIAGNOSTICO_MJN.html</code></td><td>Mejora Normativa</td></tr>
+          <tr><td><code>AUTODIAGNOSTICO_PCI.html</code></td><td>Participación Ciudadana</td></tr>
+          <tr><td><code>AUTODIAGNOSTICO_SDI.html</code></td><td>Seguridad Digital</td></tr>
+          <tr><td><code>AUTODIAGNOSTICO_SEC.html</code></td><td>Servicio al Ciudadano</td></tr>
+          <tr><td><code>AUTODIAGNOSTICO_SYE.html</code></td><td>Seguimiento y Evaluación</td></tr>
+          <tr><td><code>AUTODIAGNOSTICO_TRA.html</code></td><td>Transparencia y Acceso a la Información</td></tr>
+          <tr><td><code>APPS_SCRIPT_SHEETS.js</code></td><td>Código para Google Apps Script (backend)</td></tr>
+          <tr><td><code>GUIA_CONFIGURACION.html</code></td><td>Este documento</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Consultor Organizacional · Ilder Luis Palta Velasco · 📱 317 297 1922 · ✉️ luispalta@gmail.com
+</div>
+
+</body>
+</html>
